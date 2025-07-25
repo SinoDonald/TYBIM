@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 namespace AutoBuild
@@ -41,9 +42,9 @@ namespace AutoBuild
                     }
                 }
             }
-            // 添加「圖紙更新」面板
-            PushButton sinotechBtn = ribbonPanel.AddItem(new PushButtonData("Start", "自動翻模", addinAssmeblyPath, "AutoBuild.Start")) as PushButton;
-            sinotechBtn.LargeImage = convertFromBitmap(Properties.Resources.自動翻模);
+            // 添加「自動翻模」面板
+            PushButton autoBuildBtn = ribbonPanel.AddItem(new PushButtonData("Start", "自動翻模", addinAssmeblyPath, "AutoBuild.Start")) as PushButton;
+            autoBuildBtn.LargeImage = convertFromBitmap(Properties.Resources.自動翻模);
 
             return Result.Succeeded;
         }
@@ -54,11 +55,7 @@ namespace AutoBuild
         /// <returns></returns>
         BitmapSource convertFromBitmap(System.Drawing.Bitmap bitmap)
         {
-            return System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
-                bitmap.GetHbitmap(),
-                IntPtr.Zero,
-                Int32Rect.Empty,
-                BitmapSizeOptions.FromEmptyOptions());
+            return Imaging.CreateBitmapSourceFromHBitmap(bitmap.GetHbitmap(), IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
         }
 
         public Result OnShutdown(UIControlledApplication application)

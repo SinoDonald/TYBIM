@@ -70,6 +70,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
     }
@@ -156,8 +164,8 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:拓源數位科技"
-        "ProductCode" = "8:{DEA9C9DE-DE10-4710-A664-A019E091E647}"
-        "PackageCode" = "8:{6A7F7DB4-7479-4CFD-AB87-B11059606DE9}"
+        "ProductCode" = "8:{D5740190-DA89-4EDE-92A3-7E2CE5BC8218}"
+        "PackageCode" = "8:{B7F2B4A5-CF38-419E-9200-74240F210FF8}"
         "UpgradeCode" = "8:{5BC41E45-4CF3-4EBE-B263-94479C85CB00}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
@@ -168,7 +176,7 @@
         "Manufacturer" = "8:拓源數位科技"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:拓源數位科技 V1.0"
+        "Title" = "8:拓源數位科技 V1.0.0"
         "Subject" = "8:"
         "ARPCONTACT" = "8:Lusir"
         "Keywords" = "8:"

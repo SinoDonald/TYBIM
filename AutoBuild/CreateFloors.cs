@@ -11,7 +11,7 @@ namespace AutoBuild
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     [Journaling(JournalingMode.NoCommandData)]
-    public class CreateWalls : IExternalEventHandler
+    public class CreateFloors : IExternalEventHandler
     {
         public void Execute(UIApplication app)
         {
@@ -20,7 +20,7 @@ namespace AutoBuild
             int count = 0;
             List<string> selectedLayers = LayersForm.selectedLayers.ToList(); // 取得圖層名稱
 
-            using (Transaction trans = new Transaction(doc, "自動翻牆"))
+            using (Transaction trans = new Transaction(doc, "自動翻板"))
             {
                 trans.Start();
 

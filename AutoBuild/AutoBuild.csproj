@@ -55,7 +55,11 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CreateFloors.cs" />
+    <Compile Include="CreateBeams.cs" />
+    <Compile Include="CreateColumns.cs" />
     <Compile Include="CreateWalls.cs" />
+    <Compile Include="DataObject.cs" />
     <Compile Include="LayersForm.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -6,15 +6,18 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using static AutoBuild.DataObject;
 
 namespace AutoBuild
 {
     public partial class LayersForm : System.Windows.Forms.Form
     {
         //外部事件處理:讀取其他的cs檔
+        ExternalEvent m_externalEvent_CreateColumns; // 自動翻柱
+        ExternalEvent m_externalEvent_CreateBeams; // 自動翻樑
+        ExternalEvent m_externalEvent_CreateFloors; // 自動翻板
         ExternalEvent m_externalEvent_CreateWalls; // 自動翻牆
 
-        RadioButton[] radioButtons = new RadioButton[] { };
         Options options = new Options
         {
             ComputeReferences = true, // 讓 GeometryObject 產生 Reference
@@ -34,8 +37,9 @@ namespace AutoBuild
             public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
         }
 
-        public static List<(string, Curve, Reference)> result = new List<(string, Curve, Reference)>();
+        public static List<LineInfo> lineInfos = new List<LineInfo>();
         public static List<string> layers = new List<string>(); // 儲存圖層名稱
+        public static List<string> selectedLayers = new List<string>(); // 選取的圖層名稱
 
         private void HideHorizontalScrollBar(ListView listView)
         {
@@ -46,16 +50,27 @@ namespace AutoBuild
         {
             InitializeComponent();
 
+            IExternalEventHandler handler_CreateColumns = new CreateColumns(); // 自動翻柱
+            ExternalEvent externalEvent_CreateColumns = ExternalEvent.Create(handler_CreateColumns);
+            m_externalEvent_CreateColumns = externalEvent_CreateColumns;
+            IExternalEventHandler handler_CreateBeams = new CreateBeams(); // 自動翻樑
+            ExternalEvent externalEvent_CreateBeams = ExternalEvent.Create(handler_CreateBeams);
+            m_externalEvent_CreateBeams = externalEvent_CreateBeams;
+            IExternalEventHandler handler_CreateFloors = new CreateFloors(); // 自動翻板
+            ExternalEvent externalEvent_CreateFloors = ExternalEvent.Create(handler_CreateFloors);
+            m_externalEvent_CreateFloors = externalEvent_CreateFloors;
             IExternalEventHandler handler_CreateWalls = new CreateWalls(); // 自動翻牆
             ExternalEvent externalEvent_CreateWalls = ExternalEvent.Create(handler_CreateWalls);
             m_externalEvent_CreateWalls = externalEvent_CreateWalls;
 
-            layers.Clear(); // 清空圖層名稱
+            lineInfos = new List<LineInfo>();
+            layers = new List<string>();
             layers = GetCADLayerLines(uidoc.Document); // 取得CAD圖層線條
             CreateLayerNames(layers); // 建立圖層名稱
             CreateRadioButton(); // 新增RadioButton
             CenterToParent(); // 視窗置中
 
+            // 設定ListView UI介面
             listView1.View = System.Windows.Forms.View.Details;
             foreach (ColumnHeader column in listView1.Columns) { column.Width = listView1.ClientSize.Width / listView1.Columns.Count; }
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
@@ -73,10 +88,7 @@ namespace AutoBuild
                 if (importInstance.IsLinked)
                 {
                     //CategoryNameMap categorys = importInstance.Category.SubCategories;
-                    //foreach (Category category in categorys)
-                    //{
-                    //    layers.Add(category.Name);
-                    //}
+                    //foreach (Category category in categorys) { layers.Add(category.Name); }
 
                     GeometryElement geomElement = importInstance.get_Geometry(options);
                     foreach (GeometryObject geomObj in geomElement)
@@ -93,11 +105,14 @@ namespace AutoBuild
                                     GraphicsStyle style = doc.GetElement(styleId) as GraphicsStyle;
                                     string layerName = style?.GraphicsStyleCategory?.Name;
 
-                                    if (!String.IsNullOrEmpty(layerName) /*&& layerName.Contains("WALL")*/)
+                                    if (!String.IsNullOrEmpty(layerName))
                                     {
-                                        Reference reference = curve.Reference;
-                                        result.Add((layerName, curve, reference));
-                                        layers.Add(layerName);
+                                        LineInfo lineInfo = new LineInfo();
+                                        lineInfo.layerName = layerName;
+                                        lineInfo.curve = curve;
+                                        lineInfo.reference = curve.Reference;
+                                        lineInfos.Add(lineInfo);
+                                        if (!layers.Equals(layerName)) { layers.Add(layerName); } // 確保不重複添加圖層名稱
                                     }
                                 }
                             }
@@ -105,6 +120,7 @@ namespace AutoBuild
                     }
                 }
             }
+            layers = layers.Distinct().OrderBy(x => x).ToList(); // 排序
 
             return layers;
         }
@@ -116,18 +132,14 @@ namespace AutoBuild
         {
             listView1.Columns.Clear(); // 清空欄位
             listView1.Items.Clear(); // 清空節點
+
             try
             {
                 listView1.Columns.Add("圖層名稱");
-                foreach (string layer in layers)
-                {
-                    listView1.Items.Add(layer);
-                }
+                foreach (string layer in layers) { listView1.Items.Add(layer); }
             }
-            catch(Exception ex)
-            {
-                MessageBox.Show("建立圖層名稱時發生錯誤: " + ex.Message);
-            }
+            catch(Exception ex) { MessageBox.Show("建立圖層名稱時發生錯誤: " + ex.Message); }
+            
             listView1.View = System.Windows.Forms.View.List;
         }
         /// <summary>
@@ -136,7 +148,7 @@ namespace AutoBuild
         private void CreateRadioButton()
         {
             List<string> createElemTypes = new List<string>() { "柱", "樑", "板", "牆" };
-            this.radioButtons = new RadioButton[createElemTypes.Count];
+            RadioButton[] radioButtons = new RadioButton[createElemTypes.Count];
             for (int i = 0; i < createElemTypes.Count; i++)
             {
                 radioButtons[i] = new RadioButton();
@@ -151,18 +163,12 @@ namespace AutoBuild
         // 全選
         private void allRbtn_CheckedChanged(object sender, EventArgs e)
         {
-            for (int i = 0; i < listView1.Items.Count; i++)
-            {
-                listView1.Items[i].Checked = true;
-            }
+            for (int i = 0; i < listView1.Items.Count; i++) { listView1.Items[i].Checked = true; }
         }
         // 全部取消
         private void allCancelRbtn_CheckedChanged(object sender, EventArgs e)
         {
-            for (int i = 0; i < listView1.Items.Count; i++)
-            {
-                listView1.Items[i].Checked = false;
-            }
+            for (int i = 0; i < listView1.Items.Count; i++) { listView1.Items[i].Checked = false; }
         }
         // 選取文字即勾選
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
@@ -171,20 +177,49 @@ namespace AutoBuild
             ListViewItem focusedItem = selectListView.FocusedItem;
             if (selectListView.SelectedItems.Count > 0)
             {
-                if (focusedItem.Checked == true)
-                {
-                    focusedItem.Checked = false;
-                }
-                else
-                {
-                    focusedItem.Checked = true;
-                }
+                if (focusedItem.Checked == true) { focusedItem.Checked = false; }
+                else { focusedItem.Checked = true; }
             }
         }
         // 確定
         private void sureBtn_Click(object sender, System.EventArgs e)
         {
-            m_externalEvent_CreateWalls.Raise(); // 自動翻牆
+            selectedLayers.Clear(); // 清空
+
+            try
+            {
+                ListView listView = groupBox1.Controls.OfType<ListView>().FirstOrDefault();
+                selectedLayers = listView.CheckedItems.Cast<ListViewItem>().Select(item => item.Text).ToList();
+                RadioButton radioBtn = radioBtnPanel.Controls.OfType<RadioButton>().FirstOrDefault(rb => rb.Checked);
+                if(selectedLayers.Count > 0)
+                {
+                    if (radioBtn.Text.Equals("柱"))
+                    {
+                        m_externalEvent_CreateColumns.Raise(); // 自動翻柱
+                    }
+                    else if (radioBtn.Text.Equals("樑"))
+                    {
+                        m_externalEvent_CreateBeams.Raise(); // 自動翻樑
+                    }
+                    else if (radioBtn.Text.Equals("板"))
+                    {
+                        m_externalEvent_CreateFloors.Raise(); // 自動翻板
+                    }
+                    else
+                    {
+                        m_externalEvent_CreateWalls.Raise(); // 自動翻牆
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("請至少選擇一個圖層。");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("發生錯誤: " + ex.Message);
+            }
             Close();
         }
         // 取消
