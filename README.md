@@ -1,2 +1,2 @@
-# Sinotech
-中興自動化
+# TYBIM
+拓源數位科技
