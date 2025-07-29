@@ -82,13 +82,19 @@ namespace AutoBuild
         /// <returns></returns>
         private List<string> GetCADLayerLines(Document doc)
         {
-            List<ImportInstance> importInstances = new FilteredElementCollector(doc).OfClass(typeof(ImportInstance)).Cast<ImportInstance>().ToList();
+            List<ImportInstance> importInstances = new FilteredElementCollector(doc).OfClass(typeof(ImportInstance)).Cast<ImportInstance>().Where(x => x.Category != null).ToList();
             foreach (ImportInstance importInstance in importInstances)
             {
                 if (importInstance.IsLinked)
                 {
                     //CategoryNameMap categorys = importInstance.Category.SubCategories;
-                    //foreach (Category category in categorys) { layers.Add(category.Name); }
+                    //foreach (Category category in categorys)
+                    //{
+                    //    if (!layers.Equals(category.Name))
+                    //    { 
+                    //        layers.Add(category.Name); 
+                    //    }
+                    //}
 
                     GeometryElement geomElement = importInstance.get_Geometry(options);
                     foreach (GeometryObject geomObj in geomElement)
@@ -98,7 +104,7 @@ namespace AutoBuild
                             GeometryElement instanceGeom = geomInstance.GetInstanceGeometry();
                             foreach (GeometryObject obj in instanceGeom)
                             {
-                                if (obj is Curve curve)
+                                if (obj is PolyLine curve)
                                 {
                                     // 取得圖層(實際是 GraphicsStyle 對應到 DWG 圖層)
                                     ElementId styleId = curve.GraphicsStyleId;
@@ -109,8 +115,7 @@ namespace AutoBuild
                                     {
                                         LineInfo lineInfo = new LineInfo();
                                         lineInfo.layerName = layerName;
-                                        lineInfo.curve = curve;
-                                        lineInfo.reference = curve.Reference;
+                                        lineInfo.polyLine = curve;
                                         lineInfos.Add(lineInfo);
                                         if (!layers.Equals(layerName)) { layers.Add(layerName); } // 確保不重複添加圖層名稱
                                     }

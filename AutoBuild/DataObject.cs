@@ -13,7 +13,7 @@ namespace AutoBuild
         {
             public string layerName { get; set; }
             public Reference reference {  get; set; }
-            public Curve curve { get; set; }
+            public PolyLine polyLine { get; set; }
         }
     }
 }

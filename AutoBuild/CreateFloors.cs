@@ -29,7 +29,15 @@ namespace AutoBuild
                     List<LineInfo> linesList = LayersForm.lineInfos.Where(x => x.layerName.Equals(selectedLayer)).ToList();
                     foreach (LineInfo lineInfo in linesList)
                     {
-                        count += DrawLine(doc, lineInfo.curve); // 在3D視圖中畫模型線
+                        PolyLine polyLine = lineInfo.polyLine;
+                        for (int i = 0; i < polyLine.GetCoordinates().Count - 1; i++)
+                        {
+                            XYZ start = polyLine.GetCoordinates()[i];
+                            XYZ end = polyLine.GetCoordinates()[i + 1];
+                            Curve curve = Line.CreateBound(start, end);
+                            count += DrawLine(doc, curve); // 在3D視圖中畫模型線
+                            //doc.Create.NewModelCurve(line, SketchPlane.Create(doc, Plane.CreateByNormalAndOrigin(XYZ.BasisZ, start)));
+                        }
                     }
                 }
 
