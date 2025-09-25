@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using static AutoBuild.DataObject;
+using static TYBIM.DataObject;
 
-namespace AutoBuild
+namespace TYBIM
 {
     public partial class LayersForm : System.Windows.Forms.Form
     {

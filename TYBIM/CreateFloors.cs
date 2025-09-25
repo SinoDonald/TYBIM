@@ -4,14 +4,14 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static AutoBuild.DataObject;
+using static TYBIM.DataObject;
 
-namespace AutoBuild
+namespace TYBIM
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     [Journaling(JournalingMode.NoCommandData)]
-    public class CreateWalls : IExternalEventHandler
+    public class CreateFloors : IExternalEventHandler
     {
         public void Execute(UIApplication app)
         {
@@ -20,7 +20,7 @@ namespace AutoBuild
             int count = 0;
             List<string> selectedLayers = LayersForm.selectedLayers.ToList(); // 取得圖層名稱
 
-            using (Transaction trans = new Transaction(doc, "自動翻牆"))
+            using (Transaction trans = new Transaction(doc, "自動翻板"))
             {
                 trans.Start();
 
@@ -30,7 +30,7 @@ namespace AutoBuild
                     foreach (LineInfo lineInfo in linesList)
                     {
                         PolyLine polyLine = lineInfo.polyLine;
-                        for(int i = 0; i < polyLine.GetCoordinates().Count - 1; i++)
+                        for (int i = 0; i < polyLine.GetCoordinates().Count - 1; i++)
                         {
                             XYZ start = polyLine.GetCoordinates()[i];
                             XYZ end = polyLine.GetCoordinates()[i + 1];

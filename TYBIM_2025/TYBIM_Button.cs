@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
-namespace AutoBuild
+namespace TYBIM_2025
 {
     // 預設Excel檔案路徑
     public class LicPath

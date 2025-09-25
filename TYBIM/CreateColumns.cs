@@ -4,14 +4,14 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static AutoBuild.DataObject;
+using static TYBIM.DataObject;
 
-namespace AutoBuild
+namespace TYBIM
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     [Journaling(JournalingMode.NoCommandData)]
-    public class CreateBeams : IExternalEventHandler
+    public class CreateColumns : IExternalEventHandler
     {
         public void Execute(UIApplication app)
         {
@@ -20,7 +20,7 @@ namespace AutoBuild
             int count = 0;
             List<string> selectedLayers = LayersForm.selectedLayers.ToList(); // 取得圖層名稱
 
-            using (Transaction trans = new Transaction(doc, "自動翻樑"))
+            using (Transaction trans = new Transaction(doc, "自動翻柱"))
             {
                 trans.Start();
 
