@@ -20,11 +20,7 @@ namespace TYBIM
         public string addinAssmeblyPath = Assembly.GetExecutingAssembly().Location; // 封包版路徑位址
         public Result OnStartup(UIControlledApplication application)
         {
-            //// 2020
-            //string autoBuildAsb = Path.Combine(Directory.GetParent(addinAssmeblyPath).FullName, "AutoBuild_Old.dll"); // 快速翻模
-
-            // 2024
-            string autoBuildAsb = Path.Combine(Directory.GetParent(addinAssmeblyPath).FullName, "AutoBuild.dll"); // 快速翻模
+            string autoBuildAsb = Path.Combine(Directory.GetParent(addinAssmeblyPath).FullName, "TYBIM.dll"); // 快速翻模
 
             // 創建一個新的選單
             RibbonPanel ribbonPanel = null;
@@ -43,7 +39,7 @@ namespace TYBIM
                 }
             }
             // 添加「自動翻模」面板
-            PushButton autoBuildBtn = ribbonPanel.AddItem(new PushButtonData("Start", "自動翻模", addinAssmeblyPath, "AutoBuild.Start")) as PushButton;
+            PushButton autoBuildBtn = ribbonPanel.AddItem(new PushButtonData("Start", "自動翻模", addinAssmeblyPath, "TYBIM.Start")) as PushButton;
             autoBuildBtn.LargeImage = convertFromBitmap(Properties.Resources.自動翻模);
 
             return Result.Succeeded;
