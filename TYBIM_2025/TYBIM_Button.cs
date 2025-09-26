@@ -20,16 +20,16 @@ namespace TYBIM_2025
         public string addinAssmeblyPath = Assembly.GetExecutingAssembly().Location; // 封包版路徑位址
         public Result OnStartup(UIControlledApplication application)
         {
-            string autoBuildAsb = Path.Combine(Directory.GetParent(addinAssmeblyPath).FullName, "TYBIM_2025.dll"); // 快速翻模
-
+            string autoBuildAsb = Path.Combine(Directory.GetParent(addinAssmeblyPath).FullName, "TYBIM.dll");
+            string ribbonName = "拓源數位";
             // 創建一個新的選單
             RibbonPanel ribbonPanel = null;
-            try { application.CreateRibbonTab("拓源數位"); } catch { }
-            try { ribbonPanel = application.CreateRibbonPanel("拓源數位", "自動翻模"); }
+            try { application.CreateRibbonTab(ribbonName); } catch { }
+            try { ribbonPanel = application.CreateRibbonPanel(ribbonName, "自動翻模"); }
             catch
             {
                 List<RibbonPanel> panel_list = new List<RibbonPanel>();
-                panel_list = application.GetRibbonPanels("拓源數位");
+                panel_list = application.GetRibbonPanels(ribbonName);
                 foreach (RibbonPanel rp in panel_list)
                 {
                     if (rp.Name == "自動翻模")

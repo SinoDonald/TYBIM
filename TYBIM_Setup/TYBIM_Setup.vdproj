@@ -164,8 +164,8 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:拓源數位科技"
-        "ProductCode" = "8:{AA5B0DC9-A8D1-4651-9C41-244DACFEC867}"
-        "PackageCode" = "8:{45CDC9B0-49A3-4657-8B98-4E593C7E3DC8}"
+        "ProductCode" = "8:{6249DD9A-88D6-40C6-B714-659AC0B4D494}"
+        "PackageCode" = "8:{2BF1D559-1E06-4F36-A74A-7E6F05FD66FB}"
         "UpgradeCode" = "8:{5BC41E45-4CF3-4EBE-B263-94479C85CB00}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
