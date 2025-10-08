@@ -162,8 +162,9 @@ namespace TYBIM
                 radioButtons[i].AutoSize = true;
                 radioButtons[i].Location = new System.Drawing.Point(5, 5 + i * 25);
                 radioBtnPanel.Controls.Add(radioButtons[i]);
-                if (i == 0) { radioButtons[0].Checked = true; } // 預設第一個                
+                //if (i == 0) { radioButtons[0].Checked = true; } // 預設第一個
             }
+            radioButtons[createElemTypes.Count - 1].Checked = true; // 預設為牆
         }
         // 全選
         private void allRbtn_CheckedChanged(object sender, EventArgs e)
