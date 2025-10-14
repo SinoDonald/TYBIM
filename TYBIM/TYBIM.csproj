@@ -74,6 +74,7 @@
     <Compile Include="CreateColumns.cs" />
     <Compile Include="CreateWalls.cs" />
     <Compile Include="DataObject.cs" />
+    <Compile Include="FindLevel.cs" />
     <Compile Include="LayersForm.cs">
       <SubType>Form</SubType>
     </Compile>

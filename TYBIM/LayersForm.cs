@@ -146,6 +146,11 @@ namespace TYBIM
             catch(Exception ex) { MessageBox.Show("建立圖層名稱時發生錯誤: " + ex.Message); }
             
             listView1.View = System.Windows.Forms.View.List;
+            //// 測試, 預設WALL的線條先打勾
+            //foreach (ListViewItem item in listView1.Items)
+            //{
+            //    if (item.Text.Contains("WALL")) { item.Checked = true; }
+            //}
         }
         /// <summary>
         /// 新增RadioButton
