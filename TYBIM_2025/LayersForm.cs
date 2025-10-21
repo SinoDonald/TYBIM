@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using static TYBIM_2025.DataObject;
+using ComboBox = System.Windows.Forms.ComboBox;
 
 namespace TYBIM_2025
 {
@@ -37,9 +38,12 @@ namespace TYBIM_2025
             public static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
         }
 
+        public static string b_level_name; // 基準樓層名稱
+        public static string t_level_name; // 頂部樓層名稱
         public static List<LineInfo> lineInfos = new List<LineInfo>();
         public static List<string> layers = new List<string>(); // 儲存圖層名稱
         public static List<string> selectedLayers = new List<string>(); // 選取的圖層名稱
+        public static bool byLevel = false; // 是否依樓層建立
 
         private void HideHorizontalScrollBar(ListView listView)
         {
@@ -68,12 +72,77 @@ namespace TYBIM_2025
             layers = GetCADLayerLines(uidoc.Document); // 取得CAD圖層線條
             CreateLayerNames(layers); // 建立圖層名稱
             CreateRadioButton(); // 新增RadioButton
+
+            // 基準樓層與頂部樓層
+            List<Level> levels = new FilteredElementCollector(uidoc.Document).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Name).ToList();
+            foreach (Level level in levels)
+            {
+                string level_name = level.Name;
+                b_level_comboBox.Items.Add(level_name);
+                t_level_comboBox.Items.Add(level_name);
+            }
+            if (b_level_comboBox.SelectedIndex < 0)
+            {
+                b_level_comboBox.Text = "請選擇基準樓層";
+            }
+            if (t_level_comboBox.SelectedIndex < 0)
+            {
+                t_level_comboBox.Text = "請選擇頂部樓層";
+            }
+            AdjustComboBoxDropDownListWidth(b_level_comboBox); // 調整下拉選單寬度
+            AdjustComboBoxDropDownListWidth(t_level_comboBox);
+
             CenterToParent(); // 視窗置中
 
             // 設定ListView UI介面
             listView1.View = System.Windows.Forms.View.Details;
             foreach (ColumnHeader column in listView1.Columns) { column.Width = listView1.ClientSize.Width / listView1.Columns.Count; }
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
+        }
+        /// <summary>
+        /// 調整下拉選單寬度
+        /// </summary>
+        /// <param name="senderComboBox"></param>
+        private void AdjustComboBoxDropDownListWidth(ComboBox senderComboBox)
+        {
+            Graphics g = null;
+            Font font = null;
+            try
+            {
+                int width = senderComboBox.Width;
+                g = senderComboBox.CreateGraphics();
+                font = senderComboBox.Font;
+
+                // checks if a scrollbar will be displayed.
+                // if yes, then get its width to adjust the size of the drop down list.
+                int vertScrollBarWidth =
+                    (senderComboBox.Items.Count > senderComboBox.MaxDropDownItems)
+                    ? SystemInformation.VerticalScrollBarWidth : 0;
+
+                int newWidth;
+                foreach (object s in senderComboBox.Items)  //Loop through list items and check size of each items.
+                {
+                    if (s != null)
+                    {
+                        newWidth = (int)g.MeasureString(s.ToString().Trim(), font).Width
+                            + vertScrollBarWidth;
+                        if (width < newWidth)
+                        {
+                            width = newWidth;   //set the width of the drop down list to the width of the largest item.
+                        }
+                    }
+                }
+                senderComboBox.DropDownWidth = width;
+            }
+            catch
+            { }
+            finally
+            {
+                if (g != null)
+                {
+                    g.Dispose();
+                }
+            }
         }
         /// <summary>
         /// 取得CAD圖層線條
@@ -167,7 +236,7 @@ namespace TYBIM_2025
                 radioButtons[i].AutoSize = true;
                 radioButtons[i].Location = new System.Drawing.Point(5, 5 + i * 25);
                 radioBtnPanel.Controls.Add(radioButtons[i]);
-                if (i == 0) { radioButtons[0].Checked = true; } // 預設第一個                
+                if (i == 0) { radioButtons[0].Checked = true; } // 預設第一個
             }
             //radioButtons[createElemTypes.Count - 1].Checked = true; // 預設為牆
         }
@@ -197,13 +266,40 @@ namespace TYBIM_2025
         {
             selectedLayers.Clear(); // 清空
 
+            if (b_level_comboBox.SelectedIndex < 0)
+            {
+                MessageBox.Show("請選擇基準樓層");
+                return;
+            }
+            if (t_level_comboBox.SelectedIndex < 0)
+            {
+                MessageBox.Show("請選擇頂部樓層");
+                return;
+            }
+            if (b_level_comboBox.Text == t_level_comboBox.Text)
+            {
+                MessageBox.Show("基準樓層與頂部樓層相同, 無法建立");
+                return;
+            }
+
             try
             {
                 ListView listView = groupBox1.Controls.OfType<ListView>().FirstOrDefault();
                 selectedLayers = listView.CheckedItems.Cast<ListViewItem>().Select(item => item.Text).ToList();
                 RadioButton radioBtn = radioBtnPanel.Controls.OfType<RadioButton>().FirstOrDefault(rb => rb.Checked);
-                if(selectedLayers.Count > 0)
+                if(byLevelCB.Checked)
                 {
+                    byLevel = true; // 依樓層建立
+                }
+                else
+                {
+                    byLevel = false; // 不依樓層建立
+                }
+                if (selectedLayers.Count > 0)
+                {
+                    b_level_name = b_level_comboBox.Text; // 基準樓層名稱
+                    t_level_name = t_level_comboBox.Text; // 頂部樓層名稱
+
                     if (radioBtn.Text.Equals("柱"))
                     {
                         m_externalEvent_CreateColumns.Raise(); // 自動翻柱
@@ -231,7 +327,7 @@ namespace TYBIM_2025
             {
                 MessageBox.Show("發生錯誤: " + ex.Message);
             }
-            Close();
+            //Close();
         }
         // 取消
         private void cancelBtn_Click(object sender, System.EventArgs e)

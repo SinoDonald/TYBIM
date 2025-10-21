@@ -14,9 +14,17 @@ namespace TYBIM_2025
     [Journaling(JournalingMode.NoCommandData)]
     public class CreateWalls : IExternalEventHandler
     {
+        public double unit_conversion = 0.0; // 專案單位轉換
+        public string unit_string = "cm"; // 單位字串
+
         public void Execute(UIApplication app)
         {
             Document doc = app.ActiveUIDocument.Document;
+            Units units = doc.GetUnits(); // 取得專案單位
+            ForgeTypeId lengthOptions = units.GetFormatOptions(SpecTypeId.Length).GetUnitTypeId(); // 取得長度單位
+            if (lengthOptions == UnitTypeId.Meters) { unit_conversion = 0.3048; unit_string = "m"; }
+            else if (lengthOptions == UnitTypeId.Centimeters) { unit_conversion = 30.48; unit_string = "cm"; }
+            else if (lengthOptions == UnitTypeId.Millimeters) { unit_conversion = 304.8; unit_string = "mm"; }
 
             // 找到當前專案的Level相關資訊
             FindLevel findLevel = new FindLevel();
@@ -47,23 +55,37 @@ namespace TYBIM_2025
                         List<Curve> centerCurves = CreateCenterLineWalls(curves); // 演算法一
                         //List<Line> centerCurves = GenerateCenterlines(curves); // 演算法二
 
-                        ElementId levelId = doc.ActiveView.GenLevel.Id;
-                        LevelElevation currentLevel = levelElevList.Where(x => x.level.Id.Equals(levelId)).FirstOrDefault();
-                        LevelElevation nextLevel = null;
-                        double wallHeight = 3000 / 304.8; // 預設牆高3米
-                        int currentLevelId = levelElevList.IndexOf(currentLevel);
-                        if (currentLevelId < levelElevList.Count - 1)
-                        {
-                            nextLevel = levelElevList[currentLevelId + 1];
-                            wallHeight = nextLevel.elevation - currentLevel.elevation;
-                        }
+                        // 基準樓層與頂部樓層
+                        List<Level> levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Name).ToList();
+                        Level base_level = levels.Where(x => x.Name.Equals(LayersForm.b_level_name)).FirstOrDefault();
+                        Level top_level = levels.Where(x => x.Name.Equals(LayersForm.t_level_name)).FirstOrDefault();
+                        double wallHeight = 3000 / unit_conversion; // 預設牆高3米
                         WallType wallType = new FilteredElementCollector(doc).OfClass(typeof(WallType)).Cast<WallType>().FirstOrDefault(wt => wt.Name == "RC 牆 15cm"); // 依照名稱比對
                         foreach (Curve curve in centerCurves)
                         {
                             try
                             {
-                                Wall wall = Wall.Create(doc, curve, wallType.Id, levelId, wallHeight, 0, true, false);
-                                count++;
+                                // 是否依樓層建立
+                                if (LayersForm.byLevel)
+                                {
+                                    int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
+                                    int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
+                                    for (int i = startId; i < endId; i++)
+                                    {
+                                        LevelElevation currentLevel = levelElevList[i];
+                                        LevelElevation nextLevel = levelElevList[i + 1];
+                                        wallHeight = nextLevel.elevation - currentLevel.elevation;
+                                        Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, wallHeight, 0, true, false);
+                                        wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id); // 設定頂部約束
+                                        count++;
+                                    }
+                                }
+                                else
+                                {
+                                    Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, wallHeight, 0, true, false);
+                                    wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id); // 設定頂部約束
+                                    count++;
+                                }
                                 //count += DrawLine(doc, curve);
                             }
                             catch (Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }

@@ -108,22 +108,21 @@ namespace TYBIM
                                     LevelElevation nextLevel = levelElevList[i + 1];
                                     FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, currentLevel.level, StructuralType.Column); // 生成柱
                                     colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_PARAM).Set(nextLevel.level.Id); // 設定頂部樓層
-                                    if (createColumn.angle != 0)
-                                    {
-                                        ElementTransformUtils.RotateElement(doc, colunm.Id, createColumn.axis, createColumn.angle * Math.PI / 180.0); // 旋轉柱
-                                    }
+                                    colunm.get_Parameter(BuiltInParameter.SCHEDULE_BASE_LEVEL_OFFSET_PARAM).Set(0); // 設定基準偏移
+                                    colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_OFFSET_PARAM).Set(0); // 設定頂部偏移
+                                    ElementTransformUtils.RotateElement(doc, colunm.Id, createColumn.axis, createColumn.angle * Math.PI / 180.0); // 旋轉柱
+                                    count++;
                                 }
                             }
                             else
                             {
                                 FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, base_level, StructuralType.Column); // 生成柱
                                 colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_PARAM).Set(top_level.Id); // 設定頂部樓層
-                                if (createColumn.angle != 0)
-                                {
-                                    ElementTransformUtils.RotateElement(doc, colunm.Id, createColumn.axis, createColumn.angle * Math.PI / 180.0); // 旋轉柱
-                                }
+                                colunm.get_Parameter(BuiltInParameter.SCHEDULE_BASE_LEVEL_OFFSET_PARAM).Set(0); // 設定基準偏移
+                                colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_OFFSET_PARAM).Set(0); // 設定頂部偏移
+                                ElementTransformUtils.RotateElement(doc, colunm.Id, createColumn.axis, createColumn.angle * Math.PI / 180.0); // 旋轉柱
+                                count++;
                             }
-                            count++;
                         }
                     }
                     catch (Exception) { }

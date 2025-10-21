@@ -59,15 +59,18 @@ namespace TYBIM_2025
                     {
                         double height = Math.Round(polyLine.GetCoordinates()[0].DistanceTo(polyLine.GetCoordinates()[1]) * unit_conversion, 4, MidpointRounding.AwayFromZero);
                         double width = Math.Round(polyLine.GetCoordinates()[1].DistanceTo(polyLine.GetCoordinates()[2]) * unit_conversion, 4, MidpointRounding.AwayFromZero);
-                        XYZ center = GetPolyLineCenter(polyLine); // 計算PolyLine的中心點
+                        Tuple<XYZ, Line, double> getPolyLineInfo = GetPolyLineInfo(polyLine); // 計算PolyLine的中心點
+                        XYZ center = getPolyLineInfo.Item1; // 中心點
+                        Line axis = getPolyLineInfo.Item2; // 軸心
+                        double angle = getPolyLineInfo.Item3; // 角度
                         CreateColumn createColumn = new CreateColumn()
                         {
                             name = height + " x " + width + unit_string,
                             height = height,
                             width = width,
                             center = center,
-                            axis = Line.CreateBound(center, new XYZ(center.X, center.Y, center.Z + 1)),
-                            angle = Math.Atan2(polyLine.GetCoordinates()[1].Y - polyLine.GetCoordinates()[0].Y, polyLine.GetCoordinates()[1].X - polyLine.GetCoordinates()[0].X),
+                            axis = axis,
+                            angle = angle,
                             radius = 0.0
                         };
                         createColumns.Add(createColumn);
@@ -82,7 +85,10 @@ namespace TYBIM_2025
             using (Transaction trans = new Transaction(doc, "自動翻柱"))
             {
                 trans.Start();
-                Level level = doc.GetElement(doc.ActiveView.GenLevel.Id) as Level;
+                // 基準樓層與頂部樓層
+                List<Level> levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Name).ToList();
+                Level base_level = levels.Where(x => x.Name.Equals(LayersForm.b_level_name)).FirstOrDefault();
+                Level top_level = levels.Where(x => x.Name.Equals(LayersForm.t_level_name)).FirstOrDefault();
                 foreach (CreateColumn createColumn in createColumns)
                 {
                     try
@@ -91,12 +97,32 @@ namespace TYBIM_2025
                         if (columnFS != null)
                         {
                             { columnFS.Activate(); doc.Regenerate(); } //如果柱的型號沒有啟用，則啟用它
-                            FamilyInstance colunmFI = doc.Create.NewFamilyInstance(createColumn.center, columnFS, level, StructuralType.Column); // 生成柱
-                            //if (createColumn.angle != 0)
-                            //{
-                            //    ElementTransformUtils.RotateElement(doc, colunmFI.Id, createColumn.axis, createColumn.angle * Math.PI / 180.0); // 旋轉柱
-                            //}
-                            count++;
+                            // 是否依樓層建立
+                            if (LayersForm.byLevel)
+                            {
+                                int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
+                                int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
+                                for (int i = startId; i < endId; i++)
+                                {
+                                    LevelElevation currentLevel = levelElevList[i];
+                                    LevelElevation nextLevel = levelElevList[i + 1];
+                                    FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, currentLevel.level, StructuralType.Column); // 生成柱
+                                    colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_PARAM).Set(nextLevel.level.Id); // 設定頂部樓層
+                                    colunm.get_Parameter(BuiltInParameter.SCHEDULE_BASE_LEVEL_OFFSET_PARAM).Set(0); // 設定基準偏移
+                                    colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_OFFSET_PARAM).Set(0); // 設定頂部偏移
+                                    ElementTransformUtils.RotateElement(doc, colunm.Id, createColumn.axis, createColumn.angle * Math.PI / 180.0); // 旋轉柱
+                                    count++;
+                                }
+                            }
+                            else
+                            {
+                                FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, base_level, StructuralType.Column); // 生成柱
+                                colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_PARAM).Set(top_level.Id); // 設定頂部樓層
+                                colunm.get_Parameter(BuiltInParameter.SCHEDULE_BASE_LEVEL_OFFSET_PARAM).Set(0); // 設定基準偏移
+                                colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_OFFSET_PARAM).Set(0); // 設定頂部偏移
+                                ElementTransformUtils.RotateElement(doc, colunm.Id, createColumn.axis, createColumn.angle * Math.PI / 180.0); // 旋轉柱
+                                count++;
+                            }
                         }
                     }
                     catch (Exception) { }
@@ -106,20 +132,37 @@ namespace TYBIM_2025
 
             if (count > 0) { TaskDialog.Show("Revit", "已成功建立 " + count + " 支柱。"); }
         }
-        // 計算PolyLine的中心點
-        public XYZ GetPolyLineCenter(PolyLine polyLine)
+        // PolyLine資訊
+        public Tuple<XYZ, Line, double> GetPolyLineInfo(PolyLine polyLine)
         {
+            XYZ center = new XYZ(); // 中心點
+            Line axis = null; // 軸心
+            double angle = 0.0; // 角度
+
             // 取得所有頂點
             IList<XYZ> pts = polyLine.GetCoordinates();
             if (pts.Count < 4) { return null; }
+            else
+            {
+                center = new XYZ((pts[0].X + pts[1].X + pts[2].X + pts[3].X) / 4,
+                                    (pts[0].Y + pts[1].Y + pts[2].Y + pts[3].Y) / 4,
+                                    (pts[0].Z + pts[1].Z + pts[2].Z + pts[3].Z) / 4);
+                axis = Line.CreateBound(center, new XYZ(center.X, center.Y, center.Z + 1)); // 軸心                                
+                angle = PointRotation(pts[0], pts[1]); // 角度
+            }
+            return Tuple.Create<XYZ, Line, double>(center, axis, angle);
+        }
+        // 旋轉角度
+        private static double PointRotation(XYZ p1, XYZ p2)
+        {
+            XYZ pA = new XYZ(p1.X, p1.Y, 0);
+            XYZ pB = new XYZ(p2.X, p2.Y, 0);
+            double Dx = pB.X - pA.X;
+            double Dy = pB.Y - pA.Y;
+            double DRoation = Math.Atan2(Dy, Dx);
+            double WRotation = DRoation / Math.PI * 180;
 
-            XYZ p1 = pts[0];
-            XYZ p2 = pts[1];
-            XYZ p3 = pts[2];
-
-            double x = (p1.X + p2.X) / 2.0;
-            double y = (p2.Y + p3.Y) / 2.0;
-            return new XYZ(x, y, p1.Z);
+            return WRotation;
         }
         // 新增FamilySymbol
         private void CreateFamilySymbol(Document doc, List<FamilySymbol> familySymbols, List<CreateColumn> createColumns)
