@@ -17,6 +17,10 @@ namespace TYBIM_2025
         public double unit_conversion = 0.0; // 專案單位轉換
         public string unit_string = "cm"; // 單位字串
 
+        // 設定容差值，避免浮點數誤差
+        private const double TOLERANCE = 0.001;
+        private const double ANGLE_TOLERANCE = 0.017; // 約 1 度
+
         public void Execute(UIApplication app)
         {
             Document doc = app.ActiveUIDocument.Document;
@@ -37,6 +41,28 @@ namespace TYBIM_2025
             {
                 trans.Start();
 
+                // 預先取得牆類型，避免在迴圈中重複查詢
+                WallType wallType = new FilteredElementCollector(doc)
+                    .OfClass(typeof(WallType))
+                    .Cast<WallType>()
+                    .FirstOrDefault(wt => wt.Name == "RC 牆 15cm"); // 建議：這裡最好有個機制能選擇或建立對應厚度的牆類型
+
+                // 預先取得樓層
+                List<Level> levels = new FilteredElementCollector(doc)
+                    .OfClass(typeof(Level))
+                    .Cast<Level>()
+                    .OrderBy(x => x.Name)
+                    .ToList();
+                Level base_level = levels.FirstOrDefault(x => x.Name.Equals(LayersForm.b_level_name));
+                Level top_level = levels.FirstOrDefault(x => x.Name.Equals(LayersForm.t_level_name));
+
+                if (wallType == null || base_level == null)
+                {
+                    TaskDialog.Show("Error", "找不到指定的牆類型或樓層，請檢查設定。");
+                    trans.RollBack();
+                    return;
+                }
+
                 foreach (string selectedLayer in selectedLayers)
                 {
                     List<LineInfo> linesList = LayersForm.lineInfos.Where(x => x.layerName.Equals(selectedLayer)).ToList();
@@ -44,51 +70,65 @@ namespace TYBIM_2025
                     {
                         PolyLine polyLine = lineInfo.polyLine;
                         List<Curve> curves = new List<Curve>();
-                        for (int i = 0; i < polyLine.GetCoordinates().Count - 1; i++)
+
+                        // 轉換 PolyLine 為 Revit Curves
+                        var coords = polyLine.GetCoordinates();
+                        for (int i = 0; i < coords.Count - 1; i++)
                         {
-                            XYZ start = polyLine.GetCoordinates()[i];
-                            XYZ end = polyLine.GetCoordinates()[i + 1];
+                            XYZ start = coords[i];
+                            XYZ end = coords[i + 1];
+                            // 忽略極短線段，避免幾何錯誤
+                            if (start.DistanceTo(end) < TOLERANCE) continue;
+
                             Curve curve = Line.CreateBound(start, end);
                             curves.Add(curve);
                         }
 
-                        List<Curve> centerCurves = CreateCenterLineWalls(curves); // 演算法一
-                        //List<Line> centerCurves = GenerateCenterlines(curves); // 演算法二
+                        // *** 核心修改：使用改進後的重疊算法生成中心線 ***
+                        // 不再移除短邊，保留所有幾何資訊以處理複雜接頭
+                        List<Curve> centerCurves = GenerateRobustCenterLines(curves);
 
-                        // 基準樓層與頂部樓層
-                        List<Level> levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Name).ToList();
-                        Level base_level = levels.Where(x => x.Name.Equals(LayersForm.b_level_name)).FirstOrDefault();
-                        Level top_level = levels.Where(x => x.Name.Equals(LayersForm.t_level_name)).FirstOrDefault();
-                        double wallHeight = 3000 / unit_conversion; // 預設牆高3米
-                        WallType wallType = new FilteredElementCollector(doc).OfClass(typeof(WallType)).Cast<WallType>().FirstOrDefault(wt => wt.Name == "RC 牆 15cm"); // 依照名稱比對
+                        double defaultWallHeight = 3000 / unit_conversion; // 預設牆高
+
                         foreach (Curve curve in centerCurves)
                         {
                             try
                             {
                                 // 是否依樓層建立
-                                if (LayersForm.byLevel)
+                                if (LayersForm.byLevel && top_level != null)
                                 {
                                     int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
                                     int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
-                                    for (int i = startId; i < endId; i++)
+
+                                    if (startId != -1 && endId != -1 && endId > startId)
                                     {
-                                        LevelElevation currentLevel = levelElevList[i];
-                                        LevelElevation nextLevel = levelElevList[i + 1];
-                                        wallHeight = nextLevel.elevation - currentLevel.elevation;
-                                        Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, wallHeight, 0, true, false);
-                                        wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id); // 設定頂部約束
-                                        count++;
+                                        for (int i = startId; i < endId; i++)
+                                        {
+                                            LevelElevation currentLevel = levelElevList[i];
+                                            LevelElevation nextLevel = levelElevList[i + 1];
+                                            double height = nextLevel.elevation - currentLevel.elevation;
+
+                                            Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, height, 0, true, false);
+                                            wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id); // 設定頂部約束
+                                            count++;
+                                        }
                                     }
                                 }
                                 else
                                 {
-                                    Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, wallHeight, 0, true, false);
-                                    wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id); // 設定頂部約束
+                                    Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, defaultWallHeight, 0, true, false);
+                                    if (top_level != null)
+                                    {
+                                        wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id); // 設定頂部約束
+                                    }
                                     count++;
                                 }
-                                //count += DrawLine(doc, curve);
                             }
-                            catch (Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
+                            catch (Exception ex)
+                            {
+                                // 建議記錄錯誤但繼續執行，避免單一牆體失敗導致全部失敗
+                                System.Diagnostics.Debug.WriteLine($"Create Wall Error: {ex.Message}");
+                            }
                         }
                     }
                 }
@@ -97,308 +137,71 @@ namespace TYBIM_2025
             }
 
             if (count > 0) { TaskDialog.Show("Revit", "已成功在3D視圖中畫出 " + count + " 道牆。"); }
+            else { TaskDialog.Show("Revit", "未能生成牆體，請檢查線條圖層或幾何是否正確。"); }
         }
+
         /// <summary>
-        /// 演算法一
+        /// 生成穩健的中心線列表 (基於重疊算法)
         /// </summary>
-        /// <param name="curves"></param>
-        /// <returns></returns>
-        private List<Curve> CreateCenterLineWalls(List<Curve> curves)
+        private List<Curve> GenerateRobustCenterLines(List<Curve> curves)
         {
-            // 移除最短長度的邊
-            if (curves.Count > 2)
+            List<Curve> centerLines = new List<Curve>();
+            List<Line> allLines = curves.OfType<Line>().ToList();
+            HashSet<string> processedPairs = new HashSet<string>(); // 避免重複處理
+
+            for (int i = 0; i < allLines.Count; i++)
             {
-                double minLength = Math.Round(curves.Min(x => x.Length), 4, MidpointRounding.AwayFromZero);
-                List<Curve> shortestCurves = curves.Where(x => Math.Round(x.Length, 4, MidpointRounding.AwayFromZero) == minLength).ToList();
-                if (shortestCurves.Count < curves.Count)
+                for (int j = i + 1; j < allLines.Count; j++)
                 {
-                    foreach (Curve shortestCurve in shortestCurves)
-                    {
-                        curves.Remove(shortestCurve);
-                    }
-                }
-            }
-            // 找到同向量的線
-            List<Curve> centerCurves = CreateProjectedCenterLines(curves);
-            return centerCurves;
-        }
-        /// <summary>
-        /// 找出平行且距離最近的唯一配對，建立垂直投影中心線。
-        /// </summary>
-        public static List<Curve> CreateProjectedCenterLines(List<Curve> curves)
-        {
-            var result = new List<Curve>();
-            var used = new HashSet<int>();
+                    Line l1 = allLines[i];
+                    Line l2 = allLines[j];
 
-            for (int i = 0; i < curves.Count; i++)
-            {
-                if (used.Contains(i)) continue;
-                Line line1 = curves[i] as Line;
-                if (line1 == null) continue;
+                    // 1. 檢查是否平行
+                    if (!IsParallel(l1, l2)) continue;
 
-                XYZ p1 = line1.GetEndPoint(0);
-                XYZ p2 = line1.GetEndPoint(1);
-                XYZ dir1 = (p2 - p1).Normalize();
+                    // 2. 檢查距離 (牆厚範圍)
+                    // 這裡可以加入牆厚限制，例如：只處理 10cm - 50cm 之間的平行線
+                    // 目前邏輯為：只要重疊且平行就生成
 
-                double minDist = double.MaxValue;
-                int minIndex = -1;
-
-                for (int j = 0; j < curves.Count; j++)
-                {
-                    if (i == j || used.Contains(j)) continue;
-                    Line line2 = curves[j] as Line;
-                    if (line2 == null) continue;
-
-                    XYZ q1 = line2.GetEndPoint(0);
-                    XYZ q2 = line2.GetEndPoint(1);
-                    XYZ dir2 = (q2 - q1).Normalize();
-
-                    // 平行（同向或反向都算）
-                    double dot = dir1.DotProduct(dir2);
-                    if (Math.Abs(dot) < 0.999) continue;
-
-                    // 計算平行線距離
-                    double dist = ((q1 - p1).CrossProduct(dir2)).GetLength();
-                    if (dist < minDist)
-                    {
-                        minDist = dist;
-                        minIndex = j;
-                    }
-                }
-
-                if (minIndex >= 0)
-                {
-                    used.Add(i);
-                    used.Add(minIndex);
-
-                    Line l1 = line1;
-                    Line l2 = curves[minIndex] as Line;
-                    Line centerLine = GetProjectedCenterLine(l1, l2);
+                    // 3. 獲取重疊部分的中心線
+                    Line centerLine = GetOverlapCenterLine(l1, l2);
 
                     if (centerLine != null)
-                        result.Add(centerLine);
-                }
-            }
-
-            return result;
-        }
-        /// <summary>
-        /// 將長線端點投影到延長的短線上，並建立中心線。
-        /// </summary>
-        private static Line GetProjectedCenterLine(Line l1, Line l2)
-        {
-            // 分辨長短線
-            double len1 = l1.Length;
-            double len2 = l2.Length;
-            Line longLine = len1 >= len2 ? l1 : l2;
-            Line shortLine = len1 < len2 ? l1 : l2;
-
-            XYZ s1 = shortLine.GetEndPoint(0);
-            XYZ s2 = shortLine.GetEndPoint(1);
-            XYZ dirShort = (s2 - s1).Normalize();
-
-            // 延長短線為無限線
-            XYZ sExtend1 = s1 - dirShort * 9999; // 任意大距離即可
-            XYZ sExtend2 = s2 + dirShort * 9999;
-            Line shortExtended = Line.CreateBound(sExtend1, sExtend2);
-
-            // 將長線端點投影到延長後的短線上
-            XYZ longP1 = longLine.GetEndPoint(0);
-            XYZ longP2 = longLine.GetEndPoint(1);
-            XYZ proj1 = ProjectPointToLine(longP1, shortExtended);
-            XYZ proj2 = ProjectPointToLine(longP2, shortExtended);
-            XYZ midXYZ1 = (proj1 + longP1) / 2;
-            XYZ midXYZ2 = (proj2 + longP2) / 2;
-            // 建立中心線
-            if (proj1 != null && proj2 != null)
-                return Line.CreateBound(midXYZ1, midXYZ2);
-
-            return null;
-        }
-        /// <summary>
-        /// 將點投影到直線上。
-        /// </summary>
-        private static XYZ ProjectPointToLine(XYZ point, Line line)
-        {
-            XYZ a = line.GetEndPoint(0);
-            XYZ b = line.GetEndPoint(1);
-            XYZ dir = (b - a).Normalize();
-
-            double t = (point - a).DotProduct(dir);
-            XYZ proj = a + dir * t;
-            return proj;
-        }
-
-
-
-
-        /// <summary>
-        /// 演算法二
-        /// </summary>
-        private const double TOLERANCE = 0.001; // 容差值（英尺）
-        private const double PARALLEL_ANGLE_TOLERANCE = 0.017; // ~1度（弧度）
-        /// <summary>
-        /// 從封閉曲線集合生成中心線段
-        /// </summary>
-        public List<Line> GenerateCenterlines(List<Curve> curves)
-        {
-            List<Line> centerlines = new List<Line>();
-
-            // 1. 提取所有線段
-            List<LineSegment> allSegments = ExtractLineSegments(curves);
-
-            // 2. 找出平行線段對
-            List<LineSegmentPair> parallelPairs = FindParallelPairs(allSegments);
-
-            // 3. 為每對平行線段生成中心線
-            foreach (var pair in parallelPairs)
-            {
-                Line centerline = CreateCenterline(pair);
-                if (centerline != null)
-                {
-                    centerlines.Add(centerline);
-                }
-            }
-            // 移除最短長度的邊
-            if (centerlines.Count >= 2)
-            {
-                double minLength = Math.Round(centerlines.Min(x => x.Length), 4, MidpointRounding.AwayFromZero);
-                List<Line> shortestCurves = centerlines.Where(x => Math.Round(x.Length, 4, MidpointRounding.AwayFromZero) == minLength).ToList();
-                if (shortestCurves.Count < centerlines.Count)
-                {
-                    foreach (Line shortestCurve in shortestCurves)
                     {
-                        centerlines.Remove(shortestCurve);
+                        centerLines.Add(centerLine);
                     }
                 }
             }
 
-            // 4. 合併共線的中心線段
-            centerlines = MergeCollinearLines(centerlines);
+            // 選項：可以在這裡加入合併共線線段的邏輯 (MergeCollinearLines)，讓牆體更連續
+            // 但目前的重疊算法生成的線段通常已經足夠準確
 
-            return centerlines;
+            return centerLines;
         }
+
         /// <summary>
-        /// 提取所有曲線循環中的線段
+        /// 計算兩條平行線段的「重疊部分」並返回該部分的中心線
+        /// 這是解決 T 型連接和長短牆問題的關鍵
         /// </summary>
-        private List<LineSegment> ExtractLineSegments(List<Curve> curves)
+        private Line GetOverlapCenterLine(Line l1, Line l2)
         {
-            List<LineSegment> segments = new List<LineSegment>();
-            int loopIndex = 0;
+            // 取得 l1 的方向向量
+            XYZ dir = l1.Direction.Normalize();
 
-            int segmentIndex = 0;
-            foreach (Curve curve in curves)
-            {
-                if (curve is Line line)
-                {
-                    segments.Add(new LineSegment
-                    {
-                        Line = line,
-                        LoopIndex = loopIndex,
-                        SegmentIndex = segmentIndex,
-                        Direction = (line.GetEndPoint(1) - line.GetEndPoint(0)).Normalize()
-                    });
-                }
-                segmentIndex++;
-            }
-            loopIndex++;
+            // 將 l1 的起終點投影到自身 (參數為 0 和 Length)
+            double t1_start = 0;
+            double t1_end = l1.Length;
 
-            return segments;
-        }
-        /// <summary>
-        /// 找出所有平行線段對
-        /// </summary>
-        private List<LineSegmentPair> FindParallelPairs(List<LineSegment> segments)
-        {
-            List<LineSegmentPair> pairs = new List<LineSegmentPair>();
-            HashSet<string> processedPairs = new HashSet<string>();
+            // 將 l2 的起終點投影到 l1 所在的無限直線上
+            // 先求 l2 相對於 l1 起點的向量
+            XYZ v2_start = l2.GetEndPoint(0) - l1.GetEndPoint(0);
+            XYZ v2_end = l2.GetEndPoint(1) - l1.GetEndPoint(0);
 
-            for (int i = 0; i < segments.Count; i++)
-            {
-                for (int j = i + 1; j < segments.Count; j++)
-                {
-                    LineSegment seg1 = segments[i];
-                    LineSegment seg2 = segments[j];
+            // 計算投影參數 (Dot Product)
+            double t2_start = v2_start.DotProduct(dir);
+            double t2_end = v2_end.DotProduct(dir);
 
-                    // 檢查是否平行
-                    if (AreParallel(seg1, seg2))
-                    {
-                        // 檢查是否面對面（相對）
-                        if (AreFacingEachOther(seg1, seg2))
-                        {
-                            string pairKey = GetPairKey(i, j);
-                            if (!processedPairs.Contains(pairKey))
-                            {
-                                pairs.Add(new LineSegmentPair
-                                {
-                                    Segment1 = seg1,
-                                    Segment2 = seg2,
-                                    Distance = CalculateDistance(seg1, seg2)
-                                });
-                                processedPairs.Add(pairKey);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return pairs;
-        }
-        /// <summary>
-        /// 檢查兩條線段是否平行
-        /// </summary>
-        private bool AreParallel(LineSegment seg1, LineSegment seg2)
-        {
-            double dot = Math.Abs(seg1.Direction.DotProduct(seg2.Direction));
-            return Math.Abs(dot - 1.0) < PARALLEL_ANGLE_TOLERANCE;
-        }
-        /// <summary>
-        /// 檢查兩條平行線段是否面對面
-        /// </summary>
-        private bool AreFacingEachOther(LineSegment seg1, LineSegment seg2)
-        {
-            // 計算從 seg1 到 seg2 的向量
-            XYZ midPoint1 = (seg1.Line.GetEndPoint(0) + seg1.Line.GetEndPoint(1)) / 2;
-            XYZ midPoint2 = (seg2.Line.GetEndPoint(0) + seg2.Line.GetEndPoint(1)) / 2;
-            XYZ connectionVector = (midPoint2 - midPoint1).Normalize();
-
-            // 檢查連接向量是否垂直於線段方向
-            double dot = Math.Abs(connectionVector.DotProduct(seg1.Direction));
-            return dot < PARALLEL_ANGLE_TOLERANCE;
-        }
-        /// <summary>
-        /// 計算兩條平行線段之間的距離
-        /// </summary>
-        private double CalculateDistance(LineSegment seg1, LineSegment seg2)
-        {
-            XYZ point1 = seg1.Line.GetEndPoint(0);
-            XYZ point2 = seg2.Line.Project(point1).XYZPoint;
-            return point1.DistanceTo(point2);
-        }
-        /// <summary>
-        /// 為一對平行線段創建中心線
-        /// </summary>
-        private Line CreateCenterline(LineSegmentPair pair)
-        {
-            Line line1 = pair.Segment1.Line;
-            Line line2 = pair.Segment2.Line;
-
-            // 計算重疊區域
-            XYZ start1 = line1.GetEndPoint(0);
-            XYZ end1 = line1.GetEndPoint(1);
-            XYZ start2 = line2.GetEndPoint(0);
-            XYZ end2 = line2.GetEndPoint(1);
-
-            // 將 line2 的點投影到 line1 上
-            XYZ projStart2 = line1.Project(start2).XYZPoint;
-            XYZ projEnd2 = line1.Project(end2).XYZPoint;
-
-            // 找出重疊區域的參數範圍
-            double t1_start = 0, t1_end = 1;
-            double t2_start = line1.Project(projStart2).Parameter;
-            double t2_end = line1.Project(projEnd2).Parameter;
-
-            // 確保順序正確
+            // 確保 t2 參數從小到大排序
             if (t2_start > t2_end)
             {
                 double temp = t2_start;
@@ -406,231 +209,81 @@ namespace TYBIM_2025
                 t2_end = temp;
             }
 
-            // 計算重疊範圍
+            // 計算重疊區間 [overlapStart, overlapEnd]
+            // 重疊區間是 [t1_start, t1_end] 與 [t2_start, t2_end] 的交集
             double overlapStart = Math.Max(t1_start, t2_start);
             double overlapEnd = Math.Min(t1_end, t2_end);
 
-            if (overlapEnd <= overlapStart)
+            // 如果沒有重疊或重疊太短，則不是面對面的牆線
+            if (overlapEnd - overlapStart < TOLERANCE)
             {
-                return null; // 沒有重疊
+                return null;
             }
 
             // 計算中心線的起點和終點
-            Line line = GetProjectedCenterLine(line1, line2);
-            XYZ centerStart = line.GetEndPoint(0);
-            XYZ centerEnd = line.GetEndPoint(1);
-            //XYZ a = line1.Evaluate(overlapStart, true);
-            //double y = GetCorrespondingParameter(line2, line1, overlapStart);
-            //XYZ b = line2.Evaluate(y, true);
-            //centerStart = (a + b) / 2;
-            //XYZ centerStart = (line1.Evaluate(overlapStart, true) +
-            //                  line2.Evaluate(GetCorrespondingParameter(line2, line1, overlapStart), true)) / 2;
-            //XYZ centerEnd = (line1.Evaluate(overlapEnd, true) +
-            //                line2.Evaluate(GetCorrespondingParameter(line2, line1, overlapEnd), true)) / 2;
+            // 邏輯：找出重疊區間在 l1 上的點，以及在 l2 上的對應點，取平均
 
-            if (centerStart.DistanceTo(centerEnd) < TOLERANCE)
+            // 找出 l1 上對應重疊區間的點
+            XYZ p1_overlap_start = l1.Evaluate(overlapStart / l1.Length, true); // Evaluate 使用 0~1 的歸一化參數
+            XYZ p1_overlap_end = l1.Evaluate(overlapEnd / l1.Length, true);
+
+            // 找出 l2 上對應重疊區間的點
+            // 透過將 p1 投影到 l2 上來獲取
+            XYZ p2_overlap_start = ProjectPointToLine(p1_overlap_start, l2);
+            XYZ p2_overlap_end = ProjectPointToLine(p1_overlap_end, l2);
+
+            // 計算中點
+            XYZ centerStart = (p1_overlap_start + p2_overlap_start) / 2.0;
+            XYZ centerEnd = (p1_overlap_end + p2_overlap_end) / 2.0;
+
+            // 建立中心線
+            if (centerStart.DistanceTo(centerEnd) > TOLERANCE)
             {
-                return null; // 線段太短
+                return Line.CreateBound(centerStart, centerEnd);
             }
 
-            return Line.CreateBound(centerStart, centerEnd);
+            return null;
         }
-        /// <summary>
-        /// 獲取對應參數
-        /// </summary>
-        private double GetCorrespondingParameter(Line targetLine, Line sourceLine, double sourceParam)
-        {
-            XYZ pointOnSource = sourceLine.Evaluate(sourceParam, true);
-            IntersectionResult result = targetLine.Project(pointOnSource);
-            return result.Parameter;
-        }
-        /// <summary>
-        /// 合併共線的線段
-        /// </summary>
-        private List<Line> MergeCollinearLines(List<Line> lines)
-        {
-            if (lines.Count == 0) return lines;
-
-            List<Line> merged = new List<Line>();
-            HashSet<int> processed = new HashSet<int>();
-
-            for (int i = 0; i < lines.Count; i++)
-            {
-                if (processed.Contains(i)) continue;
-
-                Line current = lines[i];
-                List<Line> collinearGroup = new List<Line> { current };
-                processed.Add(i);
-
-                for (int j = i + 1; j < lines.Count; j++)
-                {
-                    if (processed.Contains(j)) continue;
-
-                    if (AreCollinear(current, lines[j]))
-                    {
-                        collinearGroup.Add(lines[j]);
-                        processed.Add(j);
-                    }
-                }
-
-                // 合併共線組
-                Line mergedLine = MergeLineGroup(collinearGroup);
-                merged.Add(mergedLine);
-            }
-
-            return merged;
-        }
-        /// <summary>
-        /// 檢查兩條線是否共線
-        /// </summary>
-        private bool AreCollinear(Line line1, Line line2)
-        {
-            XYZ dir1 = (line1.GetEndPoint(1) - line1.GetEndPoint(0)).Normalize();
-            XYZ dir2 = (line2.GetEndPoint(1) - line2.GetEndPoint(0)).Normalize();
-
-            // 檢查方向是否平行
-            if (Math.Abs(Math.Abs(dir1.DotProduct(dir2)) - 1.0) > PARALLEL_ANGLE_TOLERANCE)
-                return false;
-
-            // 檢查是否在同一直線上
-            XYZ point = line2.GetEndPoint(0);
-            double distance = line1.Distance(point);
-
-            return distance < TOLERANCE;
-        }
-        /// <summary>
-        /// 合併一組共線的線段
-        /// </summary>
-        private Line MergeLineGroup(List<Line> lines)
-        {
-            if (lines.Count == 1) return lines[0];
-
-            List<XYZ> allPoints = new List<XYZ>();
-            foreach (Line line in lines)
-            {
-                allPoints.Add(line.GetEndPoint(0));
-                allPoints.Add(line.GetEndPoint(1));
-            }
-
-            // 找出最遠的兩個點
-            XYZ refPoint = allPoints[0];
-            XYZ farthest1 = refPoint;
-            double maxDist1 = 0;
-
-            foreach (XYZ point in allPoints)
-            {
-                double dist = refPoint.DistanceTo(point);
-                if (dist > maxDist1)
-                {
-                    maxDist1 = dist;
-                    farthest1 = point;
-                }
-            }
-
-            XYZ farthest2 = farthest1;
-            double maxDist2 = 0;
-
-            foreach (XYZ point in allPoints)
-            {
-                double dist = farthest1.DistanceTo(point);
-                if (dist > maxDist2)
-                {
-                    maxDist2 = dist;
-                    farthest2 = point;
-                }
-            }
-
-            return Line.CreateBound(farthest1, farthest2);
-        }
-        private string GetPairKey(int i, int j)
-        {
-            return i < j ? $"{i}_{j}" : $"{j}_{i}";
-        }
-        // 輔助類
-        private class LineSegment
-        {
-            public Line Line { get; set; }
-            public int LoopIndex { get; set; }
-            public int SegmentIndex { get; set; }
-            public XYZ Direction { get; set; }
-        }
-        private class LineSegmentPair
-        {
-            public LineSegment Segment1 { get; set; }
-            public LineSegment Segment2 { get; set; }
-            public double Distance { get; set; }
-        }
-
-
 
         /// <summary>
-        /// 3D視圖中畫模型線
+        /// 輔助方法：判斷兩條線是否平行
         /// </summary>
-        /// <param name="doc"></param>
-        /// <param name="curve"></param>
-        private int DrawLine(Document doc, Curve curve)
+        private bool IsParallel(Line l1, Line l2)
         {
-            int i = 0;
-            try
-            {
-                Line line = Line.CreateBound(curve.Tessellate()[0], curve.Tessellate()[curve.Tessellate().Count - 1]);
-                XYZ normal = new XYZ(line.Direction.Z - line.Direction.Y, line.Direction.X - line.Direction.Z, line.Direction.Y - line.Direction.X); // 使用與線不平行的任意向量
-                Plane plane = Plane.CreateByNormalAndOrigin(normal, curve.Tessellate()[0]);
-                SketchPlane sketchPlane = SketchPlane.Create(doc, plane);
-                ModelCurve modelCurve = doc.Create.NewModelCurve(line, sketchPlane);
-                i = 1;
-            }
-            catch (Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
+            XYZ dir1 = l1.Direction.Normalize();
+            XYZ dir2 = l2.Direction.Normalize();
 
-            return i;
+            // 檢查 DotProduct 是否接近 1 (同向) 或 -1 (反向)
+            double dot = Math.Abs(dir1.DotProduct(dir2));
+            return dot > 1.0 - ANGLE_TOLERANCE;
         }
-        // 關閉警示視窗 
-        public class CloseWarnings : IFailuresPreprocessor
-        {
-            FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
-            {
-                String transactionName = failuresAccessor.GetTransactionName();
-                IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
-                if (fmas.Count == 0) { return FailureProcessingResult.Continue; }
-                if (transactionName.Equals("EXEMPLE"))
-                {
-                    foreach (FailureMessageAccessor fma in fmas)
-                    {
-                        if (fma.GetSeverity() == FailureSeverity.Error)
-                        {
-                            failuresAccessor.DeleteAllWarnings();
-                            return FailureProcessingResult.ProceedWithRollBack;
-                        }
-                        else { failuresAccessor.DeleteWarning(fma); }
-                    }
-                }
-                else
-                {
-                    foreach (FailureMessageAccessor fma in fmas) { failuresAccessor.DeleteAllWarnings(); }
-                }
-                return FailureProcessingResult.Continue;
-            }
-        }
-        // 更新Revit項目, Family有一個新的類型
-        class LoadOpts : IFamilyLoadOptions
-        {
-            public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
-            {
-                overwriteParameterValues = true;
-                return true;
-            }
 
-            public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues)
-            {
-                source = FamilySource.Family;
-                overwriteParameterValues = true;
-                return true;
-            }
+        /// <summary>
+        /// 輔助方法：將點投影到直線上 (無限延伸)
+        /// </summary>
+        private static XYZ ProjectPointToLine(XYZ point, Line line)
+        {
+            XYZ origin = line.GetEndPoint(0);
+            XYZ dir = line.Direction.Normalize();
+            XYZ v = point - origin;
+            double d = v.DotProduct(dir);
+            return origin + dir * d;
         }
 
         public string GetName()
         {
             return "Event handler is create walls !!";
+        }
+
+        // 關閉警示視窗 
+        public class CloseWarnings : IFailuresPreprocessor
+        {
+            FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
+            {
+                // 簡化處理，直接刪除所有警告
+                failuresAccessor.DeleteAllWarnings();
+                return FailureProcessingResult.Continue;
+            }
         }
     }
 }

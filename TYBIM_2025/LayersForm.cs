@@ -98,6 +98,10 @@ namespace TYBIM_2025
             listView1.View = System.Windows.Forms.View.Details;
             foreach (ColumnHeader column in listView1.Columns) { column.Width = listView1.ClientSize.Width / listView1.Columns.Count; }
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
+
+            //// 測試：預設基準、頂部樓層
+            //b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
+            //t_level_comboBox.Text = t_level_comboBox.Items[t_level_comboBox.Items.Count - 3].ToString();
         }
         /// <summary>
         /// 調整下拉選單寬度
@@ -212,8 +216,8 @@ namespace TYBIM_2025
                 listView1.Columns.Add("圖層名稱");
                 foreach (string layer in layers) { listView1.Items.Add(layer); }
             }
-            catch(Exception ex) { MessageBox.Show("建立圖層名稱時發生錯誤: " + ex.Message); }
-            
+            catch (Exception ex) { MessageBox.Show("建立圖層名稱時發生錯誤: " + ex.Message); }
+
             listView1.View = System.Windows.Forms.View.List;
             //// 測試, 預設WALL的線條先打勾
             //foreach (ListViewItem item in listView1.Items)
@@ -287,7 +291,7 @@ namespace TYBIM_2025
                 ListView listView = groupBox1.Controls.OfType<ListView>().FirstOrDefault();
                 selectedLayers = listView.CheckedItems.Cast<ListViewItem>().Select(item => item.Text).ToList();
                 RadioButton radioBtn = radioBtnPanel.Controls.OfType<RadioButton>().FirstOrDefault(rb => rb.Checked);
-                if(byLevelCB.Checked)
+                if (byLevelCB.Checked)
                 {
                     byLevel = true; // 依樓層建立
                 }

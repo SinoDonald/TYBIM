@@ -98,6 +98,10 @@ namespace TYBIM
             listView1.View = System.Windows.Forms.View.Details;
             foreach (ColumnHeader column in listView1.Columns) { column.Width = listView1.ClientSize.Width / listView1.Columns.Count; }
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
+
+            //// 測試：預設基準、頂部樓層
+            //b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
+            //t_level_comboBox.Text = t_level_comboBox.Items[t_level_comboBox.Items.Count - 3].ToString();
         }
         /// <summary>
         /// 調整下拉選單寬度
