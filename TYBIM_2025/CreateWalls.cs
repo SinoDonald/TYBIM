@@ -68,67 +68,88 @@ namespace TYBIM_2025
                     List<LineInfo> linesList = LayersForm.lineInfos.Where(x => x.layerName.Equals(selectedLayer)).ToList();
                     foreach (LineInfo lineInfo in linesList)
                     {
-                        PolyLine polyLine = lineInfo.polyLine;
-                        List<Curve> curves = new List<Curve>();
-
-                        // 轉換 PolyLine 為 Revit Curves
-                        var coords = polyLine.GetCoordinates();
-                        for (int i = 0; i < coords.Count - 1; i++)
+                        try
                         {
-                            XYZ start = coords[i];
-                            XYZ end = coords[i + 1];
-                            // 忽略極短線段，避免幾何錯誤
-                            if (start.DistanceTo(end) < TOLERANCE) continue;
+                            PolyLine polyLine = lineInfo.polyLine;
+                            List<Curve> curves = new List<Curve>();
 
-                            Curve curve = Line.CreateBound(start, end);
-                            curves.Add(curve);
-                        }
-
-                        // *** 核心修改：使用改進後的重疊算法生成中心線 ***
-                        // 不再移除短邊，保留所有幾何資訊以處理複雜接頭
-                        List<Curve> centerCurves = GenerateRobustCenterLines(curves);
-
-                        double defaultWallHeight = 3000 / unit_conversion; // 預設牆高
-
-                        foreach (Curve curve in centerCurves)
-                        {
-                            try
+                            // 轉換 PolyLine 為 Revit Curves
+                            var coords = polyLine.GetCoordinates();
+                            for (int i = 0; i < coords.Count - 1; i++)
                             {
-                                // 是否依樓層建立
-                                if (LayersForm.byLevel && top_level != null)
+                                XYZ start = coords[i];
+                                XYZ end = coords[i + 1];
+                                // 忽略極短線段，避免幾何錯誤
+                                if (start.DistanceTo(end) < TOLERANCE) continue;
+
+                                Curve curve = Line.CreateBound(start, end);
+                                curves.Add(curve);
+                            }
+
+                            // *** 核心修改：使用改進後的重疊算法生成中心線 ***
+                            // 不再移除短邊，保留所有幾何資訊以處理複雜接頭
+                            List<Curve> centerCurves = GenerateRobustCenterLines(curves);
+
+                            double defaultWallHeight = 3000 / unit_conversion; // 預設牆高
+
+                            foreach (Curve curve in centerCurves)
+                            {
+                                try
                                 {
-                                    int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
-                                    int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
-
-                                    if (startId != -1 && endId != -1 && endId > startId)
+                                    // 是否依樓層建立
+                                    if (LayersForm.byLevel && top_level != null)
                                     {
-                                        for (int i = startId; i < endId; i++)
-                                        {
-                                            LevelElevation currentLevel = levelElevList[i];
-                                            LevelElevation nextLevel = levelElevList[i + 1];
-                                            double height = nextLevel.elevation - currentLevel.elevation;
+                                        int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
+                                        int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
 
-                                            Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, height, 0, true, false);
-                                            wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id); // 設定頂部約束
+                                        if (startId != -1 && endId != -1 && endId > startId)
+                                        {
+                                            for (int i = startId; i < endId; i++)
+                                            {
+                                                try
+                                                {
+                                                    LevelElevation currentLevel = levelElevList[i];
+                                                    LevelElevation nextLevel = levelElevList[i + 1];
+                                                    double height = nextLevel.elevation - currentLevel.elevation;
+
+                                                    Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, height, 0, true, false);
+                                                    wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id); // 設定頂部約束
+                                                    count++;
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    System.Diagnostics.Debug.WriteLine($"Create Wall Sub Error: {ex.Message}");
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        try
+                                        {
+                                            Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, defaultWallHeight, 0, true, false);
+                                            if (top_level != null)
+                                            {
+                                                wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id); // 設定頂部約束
+                                            }
                                             count++;
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            System.Diagnostics.Debug.WriteLine($"Create Wall Main Error: {ex.Message}");
                                         }
                                     }
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, defaultWallHeight, 0, true, false);
-                                    if (top_level != null)
-                                    {
-                                        wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id); // 設定頂部約束
-                                    }
-                                    count++;
+                                    // 建議記錄錯誤但繼續執行，避免單一牆體失敗導致全部失敗
+                                    System.Diagnostics.Debug.WriteLine($"Create Wall Error: {ex.Message}");
                                 }
                             }
-                            catch (Exception ex)
-                            {
-                                // 建議記錄錯誤但繼續執行，避免單一牆體失敗導致全部失敗
-                                System.Diagnostics.Debug.WriteLine($"Create Wall Error: {ex.Message}");
-                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"LineInfo Error: {ex.Message}");
                         }
                     }
                 }
