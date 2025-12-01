@@ -17,37 +17,39 @@ namespace TYBIM
         public double unit_conversion = 0.0; // 專案單位轉換
         public string unit_string = "cm"; // 單位字串
 
-        // 設定容差值，避免浮點數誤差
-        private const double TOLERANCE = 0.001;
-        private const double ANGLE_TOLERANCE = 0.017; // 約 1 度
+        // 設定容差值
+        private const double TOLERANCE = 0.001; // 幾何容差 (約 0.3mm)
+        private const double ANGLE_TOLERANCE = 0.017; // 角度容差 (約1度)
+        private const double MIN_WALL_LENGTH = 0.05; // 忽略小於 5cm 的牆段 (視專案單位調整)
+
+        // 設定牆厚判斷上限 (避免跨房間配對)
+        private const double MAX_WALL_THICKNESS_CM = 100.0; // 假設牆厚不會超過 100cm
 
         public void Execute(UIApplication app)
         {
             Document doc = app.ActiveUIDocument.Document;
-            Units units = doc.GetUnits(); // 取得專案單位
-            ForgeTypeId lengthOptions = units.GetFormatOptions(SpecTypeId.Length).GetUnitTypeId(); // 取得長度單位
+            Units units = doc.GetUnits();
+            ForgeTypeId lengthOptions = units.GetFormatOptions(SpecTypeId.Length).GetUnitTypeId();
+
             if (lengthOptions == UnitTypeId.Meters) { unit_conversion = 0.3048; unit_string = "m"; }
             else if (lengthOptions == UnitTypeId.Centimeters) { unit_conversion = 30.48; unit_string = "cm"; }
             else if (lengthOptions == UnitTypeId.Millimeters) { unit_conversion = 304.8; unit_string = "mm"; }
 
-            // 找到當前專案的Level相關資訊
             FindLevel findLevel = new FindLevel();
-            List<LevelElevation> levelElevList = findLevel.FindDocViewLevel(doc); // 全部樓層
+            List<LevelElevation> levelElevList = findLevel.FindDocViewLevel(doc);
 
             int count = 0;
-            List<string> selectedLayers = LayersForm.selectedLayers.ToList(); // 取得圖層名稱
+            List<string> selectedLayers = LayersForm.selectedLayers.ToList();
 
             using (Transaction trans = new Transaction(doc, "自動翻牆"))
             {
                 trans.Start();
 
-                // 預先取得牆類型，避免在迴圈中重複查詢
                 WallType wallType = new FilteredElementCollector(doc)
                     .OfClass(typeof(WallType))
                     .Cast<WallType>()
-                    .FirstOrDefault(wt => wt.Name == "RC 牆 15cm"); // 建議：這裡最好有個機制能選擇或建立對應厚度的牆類型
+                    .FirstOrDefault(wt => wt.Name == "RC 牆 15cm");
 
-                // 預先取得樓層
                 List<Level> levels = new FilteredElementCollector(doc)
                     .OfClass(typeof(Level))
                     .Cast<Level>()
@@ -65,91 +67,73 @@ namespace TYBIM
 
                 foreach (string selectedLayer in selectedLayers)
                 {
+                    // 收集所有線段
+                    List<Curve> allLayerCurves = new List<Curve>();
                     List<LineInfo> linesList = LayersForm.lineInfos.Where(x => x.layerName.Equals(selectedLayer)).ToList();
                     foreach (LineInfo lineInfo in linesList)
                     {
+                        var coords = lineInfo.polyLine.GetCoordinates();
+                        for (int i = 0; i < coords.Count - 1; i++)
+                        {
+                            XYZ start = coords[i];
+                            XYZ end = coords[i + 1];
+                            if (start.DistanceTo(end) < TOLERANCE) continue;
+                            allLayerCurves.Add(Line.CreateBound(start, end));
+                        }
+                    }
+
+                    // *** 關鍵修復步驟 1: 輸入端清理 ***
+                    // 先把 CAD 圖層中重疊、斷裂的線段合併，這能消除「短邊牆」的來源
+                    List<Curve> distinctCurves = CleanUpCurves(allLayerCurves, 0.005); // 嚴格容差
+
+                    // 1. 生成原始中心線
+                    List<Curve> rawCenterLines = GenerateRobustCenterLines(distinctCurves);
+
+                    // *** 關鍵修復步驟 2: 輸出端清理 ***
+                    // 再次合併生成的中心線，確保連續性
+                    List<Curve> cleanedCenterLines = CleanUpCurves(rawCenterLines, 0.02); // 較寬鬆容差
+
+                    double defaultWallHeight = 3000 / unit_conversion;
+
+                    // 3. 創建牆體
+                    foreach (Curve curve in cleanedCenterLines)
+                    {
+                        if (curve.Length < MIN_WALL_LENGTH) continue;
+
                         try
                         {
-                            PolyLine polyLine = lineInfo.polyLine;
-                            List<Curve> curves = new List<Curve>();
-
-                            // 轉換 PolyLine 為 Revit Curves
-                            var coords = polyLine.GetCoordinates();
-                            for (int i = 0; i < coords.Count - 1; i++)
+                            if (LayersForm.byLevel && top_level != null)
                             {
-                                XYZ start = coords[i];
-                                XYZ end = coords[i + 1];
-                                // 忽略極短線段，避免幾何錯誤
-                                if (start.DistanceTo(end) < TOLERANCE) continue;
+                                int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
+                                int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
 
-                                Curve curve = Line.CreateBound(start, end);
-                                curves.Add(curve);
+                                if (startId != -1 && endId != -1 && endId > startId)
+                                {
+                                    for (int i = startId; i < endId; i++)
+                                    {
+                                        LevelElevation currentLevel = levelElevList[i];
+                                        LevelElevation nextLevel = levelElevList[i + 1];
+                                        double height = nextLevel.elevation - currentLevel.elevation;
+
+                                        Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, height, 0, true, false);
+                                        wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id);
+                                        count++;
+                                    }
+                                }
                             }
-
-                            // *** 核心修改：使用改進後的重疊算法生成中心線 ***
-                            // 不再移除短邊，保留所有幾何資訊以處理複雜接頭
-                            List<Curve> centerCurves = GenerateRobustCenterLines(curves);
-
-                            double defaultWallHeight = 3000 / unit_conversion; // 預設牆高
-
-                            foreach (Curve curve in centerCurves)
+                            else
                             {
-                                try
+                                Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, defaultWallHeight, 0, true, false);
+                                if (top_level != null)
                                 {
-                                    // 是否依樓層建立
-                                    if (LayersForm.byLevel && top_level != null)
-                                    {
-                                        int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
-                                        int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
-
-                                        if (startId != -1 && endId != -1 && endId > startId)
-                                        {
-                                            for (int i = startId; i < endId; i++)
-                                            {
-                                                try
-                                                {
-                                                    LevelElevation currentLevel = levelElevList[i];
-                                                    LevelElevation nextLevel = levelElevList[i + 1];
-                                                    double height = nextLevel.elevation - currentLevel.elevation;
-
-                                                    Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, height, 0, true, false);
-                                                    wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id); // 設定頂部約束
-                                                    count++;
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                    System.Diagnostics.Debug.WriteLine($"Create Wall Sub Error: {ex.Message}");
-                                                }
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        try
-                                        {
-                                            Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, defaultWallHeight, 0, true, false);
-                                            if (top_level != null)
-                                            {
-                                                wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id); // 設定頂部約束
-                                            }
-                                            count++;
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            System.Diagnostics.Debug.WriteLine($"Create Wall Main Error: {ex.Message}");
-                                        }
-                                    }
+                                    wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id);
                                 }
-                                catch (Exception ex)
-                                {
-                                    // 建議記錄錯誤但繼續執行，避免單一牆體失敗導致全部失敗
-                                    System.Diagnostics.Debug.WriteLine($"Create Wall Error: {ex.Message}");
-                                }
+                                count++;
                             }
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"LineInfo Error: {ex.Message}");
+                            System.Diagnostics.Debug.WriteLine($"Wall Create Error: {ex.Message}");
                         }
                     }
                 }
@@ -157,18 +141,18 @@ namespace TYBIM
                 trans.Commit();
             }
 
-            if (count > 0) { TaskDialog.Show("Revit", "已成功在3D視圖中畫出 " + count + " 道牆。"); }
-            else { TaskDialog.Show("Revit", "未能生成牆體，請檢查線條圖層或幾何是否正確。"); }
+            if (count > 0) { TaskDialog.Show("Revit", "已成功生成 " + count + " 道牆。"); }
+            else { TaskDialog.Show("Revit", "未生成任何牆體。"); }
         }
 
-        /// <summary>
-        /// 生成穩健的中心線列表 (基於重疊算法)
-        /// </summary>
         private List<Curve> GenerateRobustCenterLines(List<Curve> curves)
         {
             List<Curve> centerLines = new List<Curve>();
             List<Line> allLines = curves.OfType<Line>().ToList();
-            HashSet<string> processedPairs = new HashSet<string>(); // 避免重複處理
+            HashSet<string> processedPairs = new HashSet<string>();
+
+            // 計算最大牆厚 (轉為內部單位 feet)
+            double maxThick = (MAX_WALL_THICKNESS_CM / 30.48);
 
             for (int i = 0; i < allLines.Count; i++)
             {
@@ -177,14 +161,16 @@ namespace TYBIM
                     Line l1 = allLines[i];
                     Line l2 = allLines[j];
 
-                    // 1. 檢查是否平行
                     if (!IsParallel(l1, l2)) continue;
 
-                    // 2. 檢查距離 (牆厚範圍)
-                    // 這裡可以加入牆厚限制，例如：只處理 10cm - 50cm 之間的平行線
-                    // 目前邏輯為：只要重疊且平行就生成
+                    // 增加距離檢查，避免跨房間配對
+                    // 取 l2 的中點計算到 l1 的距離
+                    XYZ midP2 = (l2.GetEndPoint(0) + l2.GetEndPoint(1)) / 2.0;
+                    XYZ projP2 = ProjectPointToLine(midP2, l1);
+                    double dist = midP2.DistanceTo(projP2);
 
-                    // 3. 獲取重疊部分的中心線
+                    if (dist > maxThick) continue; // 距離太遠，不是同一道牆的兩側
+
                     Line centerLine = GetOverlapCenterLine(l1, l2);
 
                     if (centerLine != null)
@@ -193,115 +179,150 @@ namespace TYBIM
                     }
                 }
             }
-
-            // 選項：可以在這裡加入合併共線線段的邏輯 (MergeCollinearLines)，讓牆體更連續
-            // 但目前的重疊算法生成的線段通常已經足夠準確
-
             return centerLines;
         }
 
         /// <summary>
-        /// 計算兩條平行線段的「重疊部分」並返回該部分的中心線
-        /// 這是解決 T 型連接和長短牆問題的關鍵
+        /// 通用的曲線清理與合併方法 (適用於輸入線和中心線)
         /// </summary>
+        private List<Curve> CleanUpCurves(List<Curve> rawCurves, double collinearTolerance)
+        {
+            if (rawCurves.Count == 0) return rawCurves;
+
+            List<Line> lines = rawCurves.OfType<Line>().Where(l => l.Length > TOLERANCE).ToList();
+            bool merged = true;
+
+            while (merged)
+            {
+                merged = false;
+                List<Line> nextPass = new List<Line>();
+                HashSet<int> mergedIndices = new HashSet<int>();
+
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    if (mergedIndices.Contains(i)) continue;
+
+                    Line current = lines[i];
+
+                    for (int j = i + 1; j < lines.Count; j++)
+                    {
+                        if (mergedIndices.Contains(j)) continue;
+                        Line other = lines[j];
+
+                        // 檢查合併
+                        if (AreCollinearAndOverlapping(current, other, collinearTolerance, out Line mergedLine))
+                        {
+                            current = mergedLine;
+                            mergedIndices.Add(j);
+                            merged = true;
+                        }
+                    }
+                    nextPass.Add(current);
+                }
+                lines = nextPass;
+            }
+
+            return lines.Cast<Curve>().ToList();
+        }
+
+        private bool AreCollinearAndOverlapping(Line l1, Line l2, double distTolerance, out Line mergedLine)
+        {
+            mergedLine = null;
+
+            XYZ dir1 = l1.Direction.Normalize();
+            XYZ dir2 = l2.Direction.Normalize();
+
+            // 1. 方向檢查 (平行)
+            if (Math.Abs(Math.Abs(dir1.DotProduct(dir2)) - 1.0) > ANGLE_TOLERANCE) return false;
+
+            // 2. 共線距離檢查
+            XYZ p1 = l1.GetEndPoint(0);
+            XYZ diff = l2.GetEndPoint(0) - p1;
+            double dist = diff.CrossProduct(dir1).GetLength();
+
+            if (dist > distTolerance) return false;
+
+            // 3. 投影重疊檢查
+            double t1_e = l1.Length;
+
+            double t2_s = dir1.DotProduct(l2.GetEndPoint(0) - p1);
+            double t2_e = dir1.DotProduct(l2.GetEndPoint(1) - p1);
+
+            double min2 = Math.Min(t2_s, t2_e);
+            double max2 = Math.Max(t2_s, t2_e);
+
+            double overlapStart = Math.Max(0, min2);
+            double overlapEnd = Math.Min(t1_e, max2);
+
+            // 負容差允許微小縫隙也能合併 (如 CAD 斷線)
+            if (overlapEnd - overlapStart < -TOLERANCE) return false;
+
+            // 4. 合併
+            double mergeMin = Math.Min(0, min2);
+            double mergeMax = Math.Max(t1_e, max2);
+
+            XYZ newStart = p1 + dir1 * mergeMin;
+            XYZ newEnd = p1 + dir1 * mergeMax;
+
+            mergedLine = Line.CreateBound(newStart, newEnd);
+            return true;
+        }
+
         private Line GetOverlapCenterLine(Line l1, Line l2)
         {
-            // 取得 l1 的方向向量
             XYZ dir = l1.Direction.Normalize();
+            double t1_len = l1.Length;
 
-            // 將 l1 的起終點投影到自身 (參數為 0 和 Length)
-            double t1_start = 0;
-            double t1_end = l1.Length;
+            XYZ v2_s = l2.GetEndPoint(0) - l1.GetEndPoint(0);
+            XYZ v2_e = l2.GetEndPoint(1) - l1.GetEndPoint(0);
 
-            // 將 l2 的起終點投影到 l1 所在的無限直線上
-            // 先求 l2 相對於 l1 起點的向量
-            XYZ v2_start = l2.GetEndPoint(0) - l1.GetEndPoint(0);
-            XYZ v2_end = l2.GetEndPoint(1) - l1.GetEndPoint(0);
+            double t2_s = v2_s.DotProduct(dir);
+            double t2_e = v2_e.DotProduct(dir);
 
-            // 計算投影參數 (Dot Product)
-            double t2_start = v2_start.DotProduct(dir);
-            double t2_end = v2_end.DotProduct(dir);
+            if (t2_s > t2_e) { double temp = t2_s; t2_s = t2_e; t2_e = temp; }
 
-            // 確保 t2 參數從小到大排序
-            if (t2_start > t2_end)
-            {
-                double temp = t2_start;
-                t2_start = t2_end;
-                t2_end = temp;
-            }
+            double overlapStart = Math.Max(0, t2_s);
+            double overlapEnd = Math.Min(t1_len, t2_e);
 
-            // 計算重疊區間 [overlapStart, overlapEnd]
-            // 重疊區間是 [t1_start, t1_end] 與 [t2_start, t2_end] 的交集
-            double overlapStart = Math.Max(t1_start, t2_start);
-            double overlapEnd = Math.Min(t1_end, t2_end);
+            if (overlapEnd - overlapStart < TOLERANCE) return null;
 
-            // 如果沒有重疊或重疊太短，則不是面對面的牆線
-            if (overlapEnd - overlapStart < TOLERANCE)
-            {
-                return null;
-            }
+            // 計算重疊區域的中心
+            XYZ p1_s = l1.Evaluate(overlapStart / t1_len, true);
+            XYZ p1_e = l1.Evaluate(overlapEnd / t1_len, true);
 
-            // 計算中心線的起點和終點
-            // 邏輯：找出重疊區間在 l1 上的點，以及在 l2 上的對應點，取平均
+            XYZ p2_s = ProjectPointToLine(p1_s, l2);
+            XYZ p2_e = ProjectPointToLine(p1_e, l2);
 
-            // 找出 l1 上對應重疊區間的點
-            XYZ p1_overlap_start = l1.Evaluate(overlapStart / l1.Length, true); // Evaluate 使用 0~1 的歸一化參數
-            XYZ p1_overlap_end = l1.Evaluate(overlapEnd / l1.Length, true);
+            XYZ c_s = (p1_s + p2_s) / 2.0;
+            XYZ c_e = (p1_e + p2_e) / 2.0;
 
-            // 找出 l2 上對應重疊區間的點
-            // 透過將 p1 投影到 l2 上來獲取
-            XYZ p2_overlap_start = ProjectPointToLine(p1_overlap_start, l2);
-            XYZ p2_overlap_end = ProjectPointToLine(p1_overlap_end, l2);
-
-            // 計算中點
-            XYZ centerStart = (p1_overlap_start + p2_overlap_start) / 2.0;
-            XYZ centerEnd = (p1_overlap_end + p2_overlap_end) / 2.0;
-
-            // 建立中心線
-            if (centerStart.DistanceTo(centerEnd) > TOLERANCE)
-            {
-                return Line.CreateBound(centerStart, centerEnd);
-            }
+            if (c_s.DistanceTo(c_e) > TOLERANCE)
+                return Line.CreateBound(c_s, c_e);
 
             return null;
         }
 
-        /// <summary>
-        /// 輔助方法：判斷兩條線是否平行
-        /// </summary>
         private bool IsParallel(Line l1, Line l2)
         {
-            XYZ dir1 = l1.Direction.Normalize();
-            XYZ dir2 = l2.Direction.Normalize();
-
-            // 檢查 DotProduct 是否接近 1 (同向) 或 -1 (反向)
-            double dot = Math.Abs(dir1.DotProduct(dir2));
-            return dot > 1.0 - ANGLE_TOLERANCE;
+            XYZ d1 = l1.Direction.Normalize();
+            XYZ d2 = l2.Direction.Normalize();
+            return Math.Abs(Math.Abs(d1.DotProduct(d2)) - 1.0) < ANGLE_TOLERANCE;
         }
 
-        /// <summary>
-        /// 輔助方法：將點投影到直線上 (無限延伸)
-        /// </summary>
         private static XYZ ProjectPointToLine(XYZ point, Line line)
         {
             XYZ origin = line.GetEndPoint(0);
             XYZ dir = line.Direction.Normalize();
-            XYZ v = point - origin;
-            double d = v.DotProduct(dir);
+            double d = (point - origin).DotProduct(dir);
             return origin + dir * d;
         }
 
-        public string GetName()
-        {
-            return "Event handler is create walls !!";
-        }
+        public string GetName() { return "Create Walls Handler"; }
 
-        // 關閉警示視窗 
         public class CloseWarnings : IFailuresPreprocessor
         {
             FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
             {
-                // 簡化處理，直接刪除所有警告
                 failuresAccessor.DeleteAllWarnings();
                 return FailureProcessingResult.Continue;
             }
