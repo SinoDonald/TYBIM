@@ -99,9 +99,9 @@ namespace TYBIM
             foreach (ColumnHeader column in listView1.Columns) { column.Width = listView1.ClientSize.Width / listView1.Columns.Count; }
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
 
-            //// 測試：預設基準、頂部樓層
-            //b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
-            //t_level_comboBox.Text = t_level_comboBox.Items[t_level_comboBox.Items.Count - 3].ToString();
+            // 測試：預設基準、頂部樓層
+            b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
+            t_level_comboBox.Text = t_level_comboBox.Items[t_level_comboBox.Items.Count - 3].ToString();
         }
         /// <summary>
         /// 調整下拉選單寬度
@@ -219,11 +219,11 @@ namespace TYBIM
             catch(Exception ex) { MessageBox.Show("建立圖層名稱時發生錯誤: " + ex.Message); }
             
             listView1.View = System.Windows.Forms.View.List;
-            //// 測試, 預設WALL的線條先打勾
-            //foreach (ListViewItem item in listView1.Items)
-            //{
-            //    if (item.Text.Contains("WALL")) { item.Checked = true; }
-            //}
+            // 測試, 預設WALL的線條先打勾
+            foreach (ListViewItem item in listView1.Items)
+            {
+                if (item.Text.Equals("WALL") || item.Text.Contains("OPEN")) { item.Checked = true; }
+            }
         }
         /// <summary>
         /// 新增RadioButton
@@ -242,7 +242,7 @@ namespace TYBIM
                 radioBtnPanel.Controls.Add(radioButtons[i]);
                 if (i == 0) { radioButtons[0].Checked = true; } // 預設第一個
             }
-            //radioButtons[createElemTypes.Count - 1].Checked = true; // 預設為牆
+            radioButtons[createElemTypes.Count - 1].Checked = true; // 預設為牆
         }
         // 全選
         private void allRbtn_CheckedChanged(object sender, EventArgs e)

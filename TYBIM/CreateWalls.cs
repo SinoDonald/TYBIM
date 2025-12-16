@@ -25,6 +25,9 @@ namespace TYBIM
         // 設定牆厚判斷上限 (避免跨房間配對)
         private const double MAX_WALL_THICKNESS_CM = 100.0; // 假設牆厚不會超過 100cm
 
+        // 用於共線檢查的距離容差 (判斷門線是否在牆線上)
+        private const double COLLINEAR_DIST_TOLERANCE = 0.1; // 寬鬆一點，約3cm，避免CAD畫不準
+
         public void Execute(UIApplication app)
         {
             Document doc = app.ActiveUIDocument.Document;
@@ -39,102 +42,140 @@ namespace TYBIM
             List<LevelElevation> levelElevList = findLevel.FindDocViewLevel(doc);
 
             int count = 0;
-            List<string> selectedLayers = LayersForm.selectedLayers.ToList();
+            List<string> selectedLayers = LayersForm.selectedLayers.OrderBy(s => s.IndexOf("DOOR", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                                                 s.IndexOf("OPEN", StringComparison.OrdinalIgnoreCase) >= 0).ToList();
 
             using (Transaction trans = new Transaction(doc, "自動翻牆"))
             {
+                // 關閉警示視窗
+                FailureHandlingOptions options = trans.GetFailureHandlingOptions();
+                CloseWarnings closeWarnings = new CloseWarnings();
+                options.SetClearAfterRollback(true);
+                options.SetFailuresPreprocessor(closeWarnings);
+                trans.SetFailureHandlingOptions(options);
                 trans.Start();
 
-                WallType wallType = new FilteredElementCollector(doc)
-                    .OfClass(typeof(WallType))
-                    .Cast<WallType>()
-                    .FirstOrDefault(wt => wt.Name == "RC 牆 15cm");
+                WallType wallType = new FilteredElementCollector(doc).OfClass(typeof(WallType)).Cast<WallType>().FirstOrDefault(wt => wt.Name == "RC 牆 15cm");
+                List<Level> levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Name).ToList();
+                Level base_level = levels.FirstOrDefault(x => x.Name.Equals(LayersForm.b_level_name)); // 基準樓層
+                Level top_level = levels.FirstOrDefault(x => x.Name.Equals(LayersForm.t_level_name)); // 頂部樓層
 
-                List<Level> levels = new FilteredElementCollector(doc)
-                    .OfClass(typeof(Level))
-                    .Cast<Level>()
-                    .OrderBy(x => x.Name)
-                    .ToList();
-                Level base_level = levels.FirstOrDefault(x => x.Name.Equals(LayersForm.b_level_name));
-                Level top_level = levels.FirstOrDefault(x => x.Name.Equals(LayersForm.t_level_name));
-
-                if (wallType == null || base_level == null)
+                if (wallType == null || base_level == null || top_level == null)
                 {
                     TaskDialog.Show("Error", "找不到指定的牆類型或樓層，請檢查設定。");
                     trans.RollBack();
                     return;
                 }
 
+                // 收集所有線段
+                List<Curve> allLayerCurves = new List<Curve>();
                 foreach (string selectedLayer in selectedLayers)
                 {
-                    // 收集所有線段
-                    List<Curve> allLayerCurves = new List<Curve>();
                     List<LineInfo> linesList = LayersForm.lineInfos.Where(x => x.layerName.Equals(selectedLayer)).ToList();
-                    foreach (LineInfo lineInfo in linesList)
+
+                    bool contains = false;
+                    List<string> subStrings = new List<string> { "OPEN", "DOOR" };
+                    foreach (string sub in subStrings)
                     {
-                        var coords = lineInfo.polyLine.GetCoordinates();
-                        for (int i = 0; i < coords.Count - 1; i++)
+                        if (selectedLayer.IndexOf(sub, StringComparison.OrdinalIgnoreCase) >= 0)
                         {
-                            XYZ start = coords[i];
-                            XYZ end = coords[i + 1];
-                            if (start.DistanceTo(end) < TOLERANCE) continue;
-                            allLayerCurves.Add(Line.CreateBound(start, end));
+                            contains = true;
+                            break;
                         }
                     }
-
-                    // *** 關鍵修復步驟 1: 輸入端清理 ***
-                    // 先把 CAD 圖層中重疊、斷裂的線段合併，這能消除「短邊牆」的來源
-                    List<Curve> distinctCurves = CleanUpCurves(allLayerCurves, 0.005); // 嚴格容差
-
-                    // 1. 生成原始中心線
-                    List<Curve> rawCenterLines = GenerateRobustCenterLines(distinctCurves);
-
-                    // *** 關鍵修復步驟 2: 輸出端清理 ***
-                    // 再次合併生成的中心線，確保連續性
-                    List<Curve> cleanedCenterLines = CleanUpCurves(rawCenterLines, 0.02); // 較寬鬆容差
-
-                    double defaultWallHeight = 3000 / unit_conversion;
-
-                    // 3. 創建牆體
-                    foreach (Curve curve in cleanedCenterLines)
+                    if (!contains)
                     {
-                        if (curve.Length < MIN_WALL_LENGTH) continue;
-
-                        try
+                        foreach (LineInfo lineInfo in linesList)
                         {
-                            if (LayersForm.byLevel && top_level != null)
+                            var coords = lineInfo.polyLine.GetCoordinates();
+                            for (int i = 0; i < coords.Count - 1; i++)
                             {
-                                int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
-                                int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
-
-                                if (startId != -1 && endId != -1 && endId > startId)
-                                {
-                                    for (int i = startId; i < endId; i++)
-                                    {
-                                        LevelElevation currentLevel = levelElevList[i];
-                                        LevelElevation nextLevel = levelElevList[i + 1];
-                                        double height = nextLevel.elevation - currentLevel.elevation;
-
-                                        Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, height, 0, true, false);
-                                        wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id);
-                                        count++;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, defaultWallHeight, 0, true, false);
-                                if (top_level != null)
-                                {
-                                    wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id);
-                                }
-                                count++;
+                                XYZ start = coords[i];
+                                XYZ end = coords[i + 1];
+                                if (start.DistanceTo(end) < TOLERANCE) continue;
+                                allLayerCurves.Add(Line.CreateBound(start, end));
                             }
                         }
-                        catch (Exception ex)
+                    }
+                    else
+                    {
+                        // DOOR/OPEN 圖層邏輯：檢查重疊/共線
+                        // 只有當門窗線段與現有的牆線「共線」時，才將其加入，用於填補空隙
+                        foreach (LineInfo lineInfo in linesList)
                         {
-                            System.Diagnostics.Debug.WriteLine($"Wall Create Error: {ex.Message}");
+                            var coords = lineInfo.polyLine.GetCoordinates();
+                            for (int i = 0; i < coords.Count - 1; i++)
+                            {
+                                XYZ start = coords[i];
+                                XYZ end = coords[i + 1];
+                                if (start.DistanceTo(end) < TOLERANCE) continue;
+
+                                Line doorLine = null;
+                                try { doorLine = Line.CreateBound(start, end); } catch { continue; }
+
+                                // 檢查這條門線是否與 allLayerCurves 中的任一條牆線共線
+                                // 如果共線，代表它是牆的一部分 (例如填補門洞的線)，則加入
+                                if (IsCollinearWithAny(doorLine, allLayerCurves))
+                                {
+                                    allLayerCurves.Add(doorLine);
+                                }
+                            }
                         }
+                    }
+                }
+
+                // *** 關鍵修復步驟 1: 輸入端清理 ***
+                // 先把 CAD 圖層中重疊、斷裂的線段合併，這能消除「短邊牆」的來源
+                List<Curve> distinctCurves = CleanUpCurves(allLayerCurves, 0.005); // 嚴格容差
+
+                // 1. 生成原始中心線
+                List<Curve> rawCenterLines = GenerateRobustCenterLines(distinctCurves);
+
+                // *** 關鍵修復步驟 2: 輸出端清理 ***
+                // 再次合併生成的中心線，確保連續性
+                List<Curve> cleanedCenterLines = CleanUpCurves(rawCenterLines, 0.02); // 較寬鬆容差
+
+                double defaultWallHeight = 3000 / unit_conversion;
+
+                // 3. 創建牆體
+                foreach (Curve curve in cleanedCenterLines)
+                {
+                    if (curve.Length < MIN_WALL_LENGTH) continue;
+
+                    try
+                    {
+                        if (LayersForm.byLevel && top_level != null)
+                        {
+                            int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
+                            int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
+
+                            if (startId != -1 && endId != -1 && endId > startId)
+                            {
+                                for (int i = startId; i < endId; i++)
+                                {
+                                    LevelElevation currentLevel = levelElevList[i];
+                                    LevelElevation nextLevel = levelElevList[i + 1];
+                                    double height = nextLevel.elevation - currentLevel.elevation;
+
+                                    Wall wall = Wall.Create(doc, curve, wallType.Id, currentLevel.level.Id, height, 0, true, false);
+                                    wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(nextLevel.level.Id);
+                                    count++;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Wall wall = Wall.Create(doc, curve, wallType.Id, base_level.Id, defaultWallHeight, 0, true, false);
+                            if (top_level != null)
+                            {
+                                wall.get_Parameter(BuiltInParameter.WALL_HEIGHT_TYPE).Set(top_level.Id);
+                            }
+                            count++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Wall Create Error: {ex.Message}");
                     }
                 }
 
@@ -143,6 +184,32 @@ namespace TYBIM
 
             if (count > 0) { TaskDialog.Show("Revit", "已成功生成 " + count + " 道牆。"); }
             else { TaskDialog.Show("Revit", "未生成任何牆體。"); }
+        }
+
+        // 檢查一條線是否與列表中的任何一條線「共線」(即使不重疊，只要在同一直線上也算)
+        // 這樣可以確保門線能正確填補牆線之間的空隙
+        private bool IsCollinearWithAny(Line target, List<Curve> pool)
+        {
+            foreach (var curve in pool)
+            {
+                if (curve is Line poolLine)
+                {
+                    // 1. 檢查平行
+                    double angle = target.Direction.AngleTo(poolLine.Direction);
+                    if (angle > ANGLE_TOLERANCE && Math.Abs(angle - Math.PI) > ANGLE_TOLERANCE)
+                        continue;
+
+                    // 2. 檢查共線距離 (target 的起點到 poolLine 的無限延伸直線的距離)
+                    XYZ v = target.GetEndPoint(0) - poolLine.GetEndPoint(0);
+                    XYZ cross = v.CrossProduct(poolLine.Direction.Normalize());
+
+                    if (cross.GetLength() < COLLINEAR_DIST_TOLERANCE)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         private List<Curve> GenerateRobustCenterLines(List<Curve> curves)
@@ -323,7 +390,35 @@ namespace TYBIM
         {
             FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
             {
-                failuresAccessor.DeleteAllWarnings();
+                String transactionName = failuresAccessor.GetTransactionName();
+                IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
+                if (fmas.Count == 0)
+                {
+                    return FailureProcessingResult.Continue;
+                }
+                if (transactionName.Equals("EXEMPLE"))
+                {
+                    foreach (FailureMessageAccessor fma in fmas)
+                    {
+                        if (fma.GetSeverity() == FailureSeverity.Error)
+                        {
+                            failuresAccessor.DeleteAllWarnings();
+                            return FailureProcessingResult.ProceedWithRollBack;
+                        }
+                        else
+                        {
+                            failuresAccessor.DeleteWarning(fma);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (FailureMessageAccessor fma in fmas)
+                    {
+                        failuresAccessor.DeleteAllWarnings();
+                    }
+                }
+
                 return FailureProcessingResult.Continue;
             }
         }

@@ -38,11 +38,11 @@
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.byLevelCB = new System.Windows.Forms.CheckBox();
             this.t_level_comboBox = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
             this.b_level_comboBox = new System.Windows.Forms.ComboBox();
             this.label2 = new System.Windows.Forms.Label();
-            this.byLevelCB = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -52,7 +52,7 @@
             // 
             this.cancelBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cancelBtn.Font = new System.Drawing.Font("微軟正黑體", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.cancelBtn.Location = new System.Drawing.Point(449, 316);
+            this.cancelBtn.Location = new System.Drawing.Point(449, 496);
             this.cancelBtn.Margin = new System.Windows.Forms.Padding(4);
             this.cancelBtn.Name = "cancelBtn";
             this.cancelBtn.Size = new System.Drawing.Size(80, 35);
@@ -65,7 +65,7 @@
             // 
             this.sureBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.sureBtn.Font = new System.Drawing.Font("微軟正黑體", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.sureBtn.Location = new System.Drawing.Point(361, 316);
+            this.sureBtn.Location = new System.Drawing.Point(361, 496);
             this.sureBtn.Margin = new System.Windows.Forms.Padding(4);
             this.sureBtn.Name = "sureBtn";
             this.sureBtn.Size = new System.Drawing.Size(80, 35);
@@ -81,7 +81,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.radioBtnPanel.Location = new System.Drawing.Point(6, 49);
             this.radioBtnPanel.Name = "radioBtnPanel";
-            this.radioBtnPanel.Size = new System.Drawing.Size(127, 240);
+            this.radioBtnPanel.Size = new System.Drawing.Size(127, 404);
             this.radioBtnPanel.TabIndex = 2;
             // 
             // allCancelRbtn
@@ -117,7 +117,7 @@
             this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(6, 49);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(200, 240);
+            this.listView1.Size = new System.Drawing.Size(200, 404);
             this.listView1.TabIndex = 6;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.SmallIcon;
@@ -132,7 +132,7 @@
             this.groupBox1.Controls.Add(this.allCancelRbtn);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(212, 295);
+            this.groupBox1.Size = new System.Drawing.Size(212, 475);
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "請選擇要翻模的線";
@@ -144,7 +144,7 @@
             this.groupBox2.Controls.Add(this.radioBtnPanel);
             this.groupBox2.Location = new System.Drawing.Point(230, 12);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(139, 295);
+            this.groupBox2.Size = new System.Drawing.Size(139, 475);
             this.groupBox2.TabIndex = 7;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "請選擇要翻模的類型";
@@ -160,9 +160,22 @@
             this.groupBox3.Controls.Add(this.label2);
             this.groupBox3.Location = new System.Drawing.Point(375, 12);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(153, 295);
+            this.groupBox3.Size = new System.Drawing.Size(153, 475);
             this.groupBox3.TabIndex = 8;
             this.groupBox3.TabStop = false;
+            // 
+            // byLevelCB
+            // 
+            this.byLevelCB.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.byLevelCB.AutoSize = true;
+            this.byLevelCB.Font = new System.Drawing.Font("微軟正黑體", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
+            this.byLevelCB.Location = new System.Drawing.Point(32, 206);
+            this.byLevelCB.Name = "byLevelCB";
+            this.byLevelCB.Size = new System.Drawing.Size(92, 21);
+            this.byLevelCB.TabIndex = 11;
+            this.byLevelCB.Text = "分樓層建立";
+            this.byLevelCB.UseVisualStyleBackColor = true;
             // 
             // t_level_comboBox
             // 
@@ -208,24 +221,11 @@
             this.label2.TabIndex = 3;
             this.label2.Text = "基準樓層";
             // 
-            // byLevelCB
-            // 
-            this.byLevelCB.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.byLevelCB.AutoSize = true;
-            this.byLevelCB.Font = new System.Drawing.Font("微軟正黑體", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.byLevelCB.Location = new System.Drawing.Point(32, 206);
-            this.byLevelCB.Name = "byLevelCB";
-            this.byLevelCB.Size = new System.Drawing.Size(92, 21);
-            this.byLevelCB.TabIndex = 11;
-            this.byLevelCB.Text = "分樓層建立";
-            this.byLevelCB.UseVisualStyleBackColor = true;
-            // 
             // LayersForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(542, 361);
+            this.ClientSize = new System.Drawing.Size(542, 541);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
