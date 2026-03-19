@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using static TYBIM.DataObject;
 using ComboBox = System.Windows.Forms.ComboBox;
+using TaskDialog = Autodesk.Revit.UI.TaskDialog;
 
 namespace TYBIM
 {
@@ -100,8 +101,15 @@ namespace TYBIM
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
 
             // 測試：預設基準、頂部樓層
-            b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
-            t_level_comboBox.Text = t_level_comboBox.Items[t_level_comboBox.Items.Count - 3].ToString();
+            try
+            {
+                b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
+                t_level_comboBox.Text = t_level_comboBox.Items[1].ToString();
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("錯誤", "設定預設樓層時發生錯誤: " + ex.Message);
+            }
         }
         /// <summary>
         /// 調整下拉選單寬度
@@ -219,18 +227,18 @@ namespace TYBIM
             catch(Exception ex) { MessageBox.Show("建立圖層名稱時發生錯誤: " + ex.Message); }
             
             listView1.View = System.Windows.Forms.View.List;
-            // 測試, 預設WALL的線條先打勾
-            foreach (ListViewItem item in listView1.Items)
-            {
-                if (item.Text.Equals("WALL") || item.Text.Contains("OPEN")) { item.Checked = true; }
-            }
+            //// 測試, 預設WALL的線條先打勾
+            //foreach (ListViewItem item in listView1.Items)
+            //{
+            //    if (item.Text.Equals("WALL") || item.Text.Contains("OPEN")) { item.Checked = true; }
+            //}
         }
         /// <summary>
         /// 新增RadioButton
         /// </summary>
         private void CreateRadioButton()
         {
-            List<string> createElemTypes = new List<string>() { "柱", "樑", "板", "牆" };
+            List<string> createElemTypes = new List<string>() { "柱", "板"/*, "樑", "牆" */};
             RadioButton[] radioButtons = new RadioButton[createElemTypes.Count];
             for (int i = 0; i < createElemTypes.Count; i++)
             {
@@ -320,6 +328,10 @@ namespace TYBIM
                     {
                         m_externalEvent_CreateWalls.Raise(); // 自動翻牆
                     }
+                }
+                else if (radioBtn.Text.Equals("板"))
+                {
+                    m_externalEvent_CreateFloors.Raise(); // 自動翻板
                 }
                 else
                 {

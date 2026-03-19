@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using static TYBIM_2025.DataObject;
 using ComboBox = System.Windows.Forms.ComboBox;
+using TaskDialog = Autodesk.Revit.UI.TaskDialog;
 
 namespace TYBIM_2025
 {
@@ -99,9 +100,16 @@ namespace TYBIM_2025
             foreach (ColumnHeader column in listView1.Columns) { column.Width = listView1.ClientSize.Width / listView1.Columns.Count; }
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
 
-            //// 測試：預設基準、頂部樓層
-            //b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
-            //t_level_comboBox.Text = t_level_comboBox.Items[t_level_comboBox.Items.Count - 3].ToString();
+            // 測試：預設基準、頂部樓層
+            try
+            {
+                b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
+                t_level_comboBox.Text = t_level_comboBox.Items[1].ToString();
+            }
+            catch (Exception ex)
+            {
+                TaskDialog.Show("錯誤", "設定預設樓層時發生錯誤: " + ex.Message);
+            }
         }
         /// <summary>
         /// 調整下拉選單寬度
@@ -222,7 +230,7 @@ namespace TYBIM_2025
             //// 測試, 預設WALL的線條先打勾
             //foreach (ListViewItem item in listView1.Items)
             //{
-            //    if (item.Text.Contains("WALL")) { item.Checked = true; }
+            //    if (item.Text.Equals("WALL") || item.Text.Contains("OPEN")) { item.Checked = true; }
             //}
         }
         /// <summary>
@@ -230,7 +238,7 @@ namespace TYBIM_2025
         /// </summary>
         private void CreateRadioButton()
         {
-            List<string> createElemTypes = new List<string>() { "柱", "樑", "板", "牆" };
+            List<string> createElemTypes = new List<string>() { "柱", "板"/*, "樑", "牆" */};
             RadioButton[] radioButtons = new RadioButton[createElemTypes.Count];
             for (int i = 0; i < createElemTypes.Count; i++)
             {
@@ -242,7 +250,7 @@ namespace TYBIM_2025
                 radioBtnPanel.Controls.Add(radioButtons[i]);
                 if (i == 0) { radioButtons[0].Checked = true; } // 預設第一個
             }
-            //radioButtons[createElemTypes.Count - 1].Checked = true; // 預設為牆
+            radioButtons[createElemTypes.Count - 1].Checked = true; // 預設為牆
         }
         // 全選
         private void allRbtn_CheckedChanged(object sender, EventArgs e)

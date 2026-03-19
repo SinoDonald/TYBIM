@@ -40,9 +40,11 @@
             this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.byLevelCB = new System.Windows.Forms.CheckBox();
             this.t_level_comboBox = new System.Windows.Forms.ComboBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.b_level_comboBox = new System.Windows.Forms.ComboBox();
             this.label2 = new System.Windows.Forms.Label();
+            this.b_level_comboBox = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.type_comboBox = new System.Windows.Forms.ComboBox();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.groupBox3.SuspendLayout();
@@ -154,10 +156,12 @@
             this.groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.groupBox3.Controls.Add(this.byLevelCB);
+            this.groupBox3.Controls.Add(this.type_comboBox);
             this.groupBox3.Controls.Add(this.t_level_comboBox);
             this.groupBox3.Controls.Add(this.label3);
-            this.groupBox3.Controls.Add(this.b_level_comboBox);
             this.groupBox3.Controls.Add(this.label2);
+            this.groupBox3.Controls.Add(this.b_level_comboBox);
+            this.groupBox3.Controls.Add(this.label1);
             this.groupBox3.Location = new System.Drawing.Point(375, 12);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(153, 475);
@@ -181,45 +185,67 @@
             // 
             this.t_level_comboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.t_level_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.t_level_comboBox.FormattingEnabled = true;
             this.t_level_comboBox.Location = new System.Drawing.Point(7, 165);
             this.t_level_comboBox.Name = "t_level_comboBox";
             this.t_level_comboBox.Size = new System.Drawing.Size(140, 25);
             this.t_level_comboBox.TabIndex = 10;
-            this.t_level_comboBox.Text = "請選擇頂部樓層";
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.label3.Font = new System.Drawing.Font("微軟正黑體", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.label3.Location = new System.Drawing.Point(28, 124);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(96, 26);
-            this.label3.TabIndex = 9;
-            this.label3.Text = "頂部樓層";
-            // 
-            // b_level_comboBox
-            // 
-            this.b_level_comboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.b_level_comboBox.FormattingEnabled = true;
-            this.b_level_comboBox.Location = new System.Drawing.Point(7, 91);
-            this.b_level_comboBox.Name = "b_level_comboBox";
-            this.b_level_comboBox.Size = new System.Drawing.Size(140, 25);
-            this.b_level_comboBox.TabIndex = 8;
-            this.b_level_comboBox.Text = "請選擇基準樓層";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.BackColor = System.Drawing.SystemColors.ActiveCaption;
             this.label2.Font = new System.Drawing.Font("微軟正黑體", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
-            this.label2.Location = new System.Drawing.Point(28, 49);
+            this.label2.Location = new System.Drawing.Point(28, 124);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(96, 26);
-            this.label2.TabIndex = 3;
-            this.label2.Text = "基準樓層";
+            this.label2.TabIndex = 9;
+            this.label2.Text = "頂部樓層";
+            // 
+            // b_level_comboBox
+            // 
+            this.b_level_comboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.b_level_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.b_level_comboBox.FormattingEnabled = true;
+            this.b_level_comboBox.Location = new System.Drawing.Point(7, 91);
+            this.b_level_comboBox.Name = "b_level_comboBox";
+            this.b_level_comboBox.Size = new System.Drawing.Size(140, 25);
+            this.b_level_comboBox.TabIndex = 8;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.label1.Font = new System.Drawing.Font("微軟正黑體", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
+            this.label1.Location = new System.Drawing.Point(28, 49);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(96, 26);
+            this.label1.TabIndex = 3;
+            this.label1.Text = "基準樓層";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.label3.Font = new System.Drawing.Font("微軟正黑體", 15.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(136)));
+            this.label3.Location = new System.Drawing.Point(28, 239);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(96, 26);
+            this.label3.TabIndex = 9;
+            this.label3.Text = "類型選擇";
+            // 
+            // type_comboBox
+            // 
+            this.type_comboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.type_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.type_comboBox.FormattingEnabled = true;
+            this.type_comboBox.Location = new System.Drawing.Point(7, 280);
+            this.type_comboBox.Name = "type_comboBox";
+            this.type_comboBox.Size = new System.Drawing.Size(140, 25);
+            this.type_comboBox.TabIndex = 10;
             // 
             // LayersForm
             // 
@@ -258,9 +284,11 @@
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.ComboBox t_level_comboBox;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.ComboBox b_level_comboBox;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.ComboBox b_level_comboBox;
+        private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox byLevelCB;
+        private System.Windows.Forms.ComboBox type_comboBox;
+        private System.Windows.Forms.Label label3;
     }
 }
