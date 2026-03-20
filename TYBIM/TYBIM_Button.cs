@@ -38,9 +38,12 @@ namespace TYBIM
                     }
                 }
             }
-            // 添加「自動翻模」面板
-            PushButton autoBuildBtn = ribbonPanel.AddItem(new PushButtonData("Start", "自動翻模", addinAssmeblyPath, "TYBIM.Start")) as PushButton;
-            autoBuildBtn.LargeImage = convertFromBitmap(Properties.Resources.自動翻模);
+            // 添加「自動翻柱」面板
+            PushButton createColumnsBtn = ribbonPanel.AddItem(new PushButtonData("CreateColumns", "自動翻柱", addinAssmeblyPath, "TYBIM.Start")) as PushButton;
+            createColumnsBtn.LargeImage = convertFromBitmap(Properties.Resources.自動翻柱);
+            // 添加「自動生板」面板
+            PushButton createFloorsBtn = ribbonPanel.AddItem(new PushButtonData("CreateFloors", "自動生板", addinAssmeblyPath, "TYBIM.CreateFloor")) as PushButton;
+            createFloorsBtn.LargeImage = convertFromBitmap(Properties.Resources.自動生板);
 
             return Result.Succeeded;
         }

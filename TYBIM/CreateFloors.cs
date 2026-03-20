@@ -45,6 +45,12 @@ namespace TYBIM
 
                 using (Transaction trans = new Transaction(doc, "按樓層切片生成樓板"))
                 {
+                    //// 關閉警示視窗
+                    //FailureHandlingOptions options = trans.GetFailureHandlingOptions();
+                    //CloseWarnings closeWarnings = new CloseWarnings();
+                    //options.SetClearAfterRollback(true);
+                    //options.SetFailuresPreprocessor(closeWarnings);
+                    //trans.SetFailureHandlingOptions(options);
                     trans.Start();
 
                     foreach (Level level in levels)

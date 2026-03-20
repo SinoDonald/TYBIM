@@ -36,13 +36,20 @@ namespace TYBIM_2025
             ElementCategoryFilter columnsFilter = new ElementCategoryFilter(BuiltInCategory.OST_Columns);
             LogicalOrFilter logicalFilter = new LogicalOrFilter(structuralColumnsFilter, columnsFilter);
             List<FamilySymbol> familySymbols = new FilteredElementCollector(doc).OfClass(typeof(FamilySymbol)).WherePasses(logicalFilter).Cast<FamilySymbol>().OrderBy(x => x.FamilyName).ToList();
-            FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals("混凝土柱-矩形")).FirstOrDefault();
-            if (!columnFS.IsActive)
+            FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType)).FirstOrDefault();
+
+            if (columnFS == null)
+            {
+                TaskDialog.Show("錯誤", "柱類型中無「" + LayersForm.columnType + "」類型。");
+                return;
+            }
+            if (!columnFS.IsActive) //如果柱的型號沒有啟用，則啟用它
             {
                 using (Transaction trans = new Transaction(doc, "啟用族群"))
                 {
                     trans.Start();
-                    { columnFS.Activate(); doc.Regenerate(); } //如果柱的型號沒有啟用，則啟用它
+                    columnFS.Activate();
+                    doc.Regenerate();
                     trans.Commit();
                 }
             }
@@ -55,19 +62,41 @@ namespace TYBIM_2025
                 foreach (LineInfo lineInfo in linesList)
                 {
                     PolyLine polyLine = lineInfo.polyLine;
-                    if (polyLine.GetCoordinates().Count >= 4)
+                    if (polyLine.GetCoordinates().Count == 5) // 只有當PolyLine有5個頂點(矩形)才建立柱，其他的情況不處理
                     {
-                        double height = Math.Round(polyLine.GetCoordinates()[0].DistanceTo(polyLine.GetCoordinates()[1]) * unit_conversion, 4, MidpointRounding.AwayFromZero);
-                        double width = Math.Round(polyLine.GetCoordinates()[1].DistanceTo(polyLine.GetCoordinates()[2]) * unit_conversion, 4, MidpointRounding.AwayFromZero);
-                        Tuple<XYZ, Line, double> getPolyLineInfo = GetPolyLineInfo(polyLine); // 計算PolyLine的中心點
+                        IList<XYZ> pts = polyLine.GetCoordinates();
+
+                        // 分別算出相鄰兩邊的長度
+                        double len1 = Math.Round(pts[0].DistanceTo(pts[1]) * unit_conversion, 4, MidpointRounding.AwayFromZero);
+                        double len2 = Math.Round(pts[1].DistanceTo(pts[2]) * unit_conversion, 4, MidpointRounding.AwayFromZero);
+
+                        // 【核心邏輯 1】統一尺寸：寬度(b)強制為短邊，深度(h)強制為長邊
+                        double colWidth = Math.Min(len1, len2);
+                        double colDepth = Math.Max(len1, len2);
+
+                        Tuple<XYZ, Line, double> getPolyLineInfo = GetPolyLineInfo(polyLine);
                         XYZ center = getPolyLineInfo.Item1; // 中心點
-                        Line axis = getPolyLineInfo.Item2; // 軸心
-                        double angle = getPolyLineInfo.Item3; // 角度
+                        Line axis = getPolyLineInfo.Item2;  // 軸心
+
+                        // 【核心邏輯 2】動態判斷旋轉角度：讓柱子的 X軸 (柱寬b) 永遠對齊 CAD 的短邊
+                        double angle = 0.0;
+                        if (len1 <= len2)
+                        {
+                            // 如果第一段線是短邊，就拿第一段線的向量來算旋轉角
+                            angle = PointRotation(pts[0], pts[1]);
+                        }
+                        else
+                        {
+                            // 如果第二段線才是短邊，就拿第二段線來算旋轉角
+                            angle = PointRotation(pts[1], pts[2]);
+                        }
+
                         CreateColumn createColumn = new CreateColumn()
                         {
-                            name = height + " x " + width + unit_string,
-                            height = height,
-                            width = width,
+                            // 類型名稱永遠統一，例如 "700 x 1000cm"
+                            name = colWidth + " x " + colDepth + unit_string,
+                            width = colWidth,   // 代表短邊
+                            height = colDepth,  // 代表長邊
                             center = center,
                             axis = axis,
                             angle = angle,
@@ -84,7 +113,14 @@ namespace TYBIM_2025
             int count = 0;
             using (Transaction trans = new Transaction(doc, "自動翻柱"))
             {
+                // 關閉警示視窗
+                FailureHandlingOptions options = trans.GetFailureHandlingOptions();
+                CloseWarnings closeWarnings = new CloseWarnings();
+                options.SetClearAfterRollback(true);
+                options.SetFailuresPreprocessor(closeWarnings);
+                trans.SetFailureHandlingOptions(options);
                 trans.Start();
+
                 // 基準樓層與頂部樓層
                 List<Level> levels = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Name).ToList();
                 Level base_level = levels.Where(x => x.Name.Equals(LayersForm.b_level_name)).FirstOrDefault();
@@ -93,10 +129,14 @@ namespace TYBIM_2025
                 {
                     try
                     {
-                        columnFS = familySymbols.Where(x => x.FamilyName.Equals("混凝土柱-矩形") && x.Name.Equals(createColumn.name)).FirstOrDefault();
+                        columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType) && x.Name.Equals(createColumn.name)).FirstOrDefault();
                         if (columnFS != null)
                         {
-                            { columnFS.Activate(); doc.Regenerate(); } //如果柱的型號沒有啟用，則啟用它
+                            if (!columnFS.IsActive) //如果柱的型號沒有啟用，則啟用它
+                            {
+                                columnFS.Activate();
+                                doc.Regenerate();
+                            }
                             // 是否依樓層建立
                             if (LayersForm.byLevel)
                             {
@@ -171,10 +211,10 @@ namespace TYBIM_2025
             List<string> symbolNames = createColumns.Select(x => x.name).Distinct().OrderBy(x => x).ToList();
             foreach (string symbolName in symbolNames)
             {
-                FamilySymbol isExistFS = familySymbols.Where(x => x.FamilyName.Equals("混凝土柱-矩形") && x.Name.Equals(symbolName)).FirstOrDefault();
+                FamilySymbol isExistFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType) && x.Name.Equals(symbolName)).FirstOrDefault();
                 if (isExistFS == null) { createSymbolNames.Add(symbolName); } // 已經沒有這個FamilySymbol就加入
             }
-            FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals("混凝土柱-矩形")).FirstOrDefault();
+            FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType)).FirstOrDefault();
             if (columnFS != null)
             {
                 try
@@ -201,13 +241,22 @@ namespace TYBIM_2025
                                 FamilyType newFamilyType = familyManager.NewType(newTypeName);
                                 if (newFamilyType != null)
                                 {
-                                    // 設置柱寬與柱深
-                                    FamilyParameter paraWidth = familyManager.get_Parameter("柱深");
-                                    FamilyParameter paraHeight = familyManager.get_Parameter("柱寬");
-                                    if (null != paraWidth && null != paraHeight)
+                                    // 設置柱寬與柱深 (對應：寬度=b=X軸=短邊，深度=h=Y軸=長邊)
+                                    FamilyParameter fpDepth = familyManager.get_Parameter("柱深");
+                                    FamilyParameter fpWidth = familyManager.get_Parameter("柱寬");
+                                    if (null != fpDepth && null != fpWidth)
                                     {
-                                        familyManager.Set(paraWidth, width / unit_conversion);
-                                        familyManager.Set(paraHeight, height / unit_conversion);
+                                        // 注意這裡的對應：fpWidth對到 width，fpDepth對到 height
+                                        familyManager.Set(fpDepth, height / unit_conversion);
+                                        familyManager.Set(fpWidth, width / unit_conversion);
+                                    }
+
+                                    FamilyParameter fpb = familyManager.get_Parameter("b");
+                                    FamilyParameter fph = familyManager.get_Parameter("h");
+                                    if (null != fpb && null != fph)
+                                    {
+                                        familyManager.Set(fpb, width / unit_conversion);
+                                        familyManager.Set(fph, height / unit_conversion);
                                     }
                                 }
 

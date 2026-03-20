@@ -6,22 +6,26 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TYBIM_2025
+namespace TYBIM
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     [Journaling(JournalingMode.NoCommandData)]
-    public class CreateFloors : IExternalEventHandler
+    public class CreateFloor : IExternalCommand
     {
-        public void Execute(UIApplication uiapp)
+
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            Application app = uiapp.Application; Document doc = uiapp.ActiveUIDocument.Document;
+            UIApplication uiapp = commandData.Application;
+            UIDocument uidoc = uiapp.ActiveUIDocument;
+            Application app = uiapp.Application;
+            Document doc = uidoc.Document;
             View view = doc.ActiveView;
 
             if (!(view is View3D))
             {
                 TaskDialog.Show("提示", "請在 3D 視圖中執行此功能。");
-                return;
+                return Result.Failed;
             }
 
             try
@@ -30,7 +34,7 @@ namespace TYBIM_2025
                     .OfClass(typeof(FloorType))
                     .FirstElementId();
 
-                if (defaultFloorTypeId == null) return;
+                if (defaultFloorTypeId == null) return Result.Failed;
 
                 List<Level> levels = new FilteredElementCollector(doc)
                     .OfClass(typeof(Level))
@@ -39,7 +43,7 @@ namespace TYBIM_2025
                     .ToList();
 
                 IList<Element> allFramingElems = GetColumnsAndBeams(doc);
-                if (!allFramingElems.Any()) return;
+                if (!allFramingElems.Any()) return Result.Failed;
 
                 int createdFloorsCount = 0;
 
@@ -136,12 +140,12 @@ namespace TYBIM_2025
                 }
 
                 TaskDialog.Show("完成", $"處理完畢！共成功生成了 {createdFloorsCount} 塊樓板。");
-                return;
+                return Result.Succeeded;
             }
             catch (Exception ex)
             {
                 TaskDialog.Show("Revit API 錯誤", ex.ToString());
-                return;
+                return Result.Failed;
             }
         }
 
@@ -281,27 +285,6 @@ namespace TYBIM_2025
                 }
                 return FailureProcessingResult.Continue;
             }
-        }
-        // 更新Revit項目, Family有一個新的類型
-        class LoadOpts : IFamilyLoadOptions
-        {
-            public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
-            {
-                overwriteParameterValues = true;
-                return true;
-            }
-
-            public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues)
-            {
-                source = FamilySource.Family;
-                overwriteParameterValues = true;
-                return true;
-            }
-        }
-
-        public string GetName()
-        {
-            return "Event handler is create walls !!";
         }
     }
 }

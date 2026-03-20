@@ -39,7 +39,7 @@
             groupBox2 = new System.Windows.Forms.GroupBox();
             groupBox3 = new System.Windows.Forms.GroupBox();
             byLevelCB = new System.Windows.Forms.CheckBox();
-            comboBox1 = new System.Windows.Forms.ComboBox();
+            type_comboBox = new System.Windows.Forms.ComboBox();
             t_level_comboBox = new System.Windows.Forms.ComboBox();
             label3 = new System.Windows.Forms.Label();
             label2 = new System.Windows.Forms.Label();
@@ -148,7 +148,7 @@
             // 
             groupBox3.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left;
             groupBox3.Controls.Add(byLevelCB);
-            groupBox3.Controls.Add(comboBox1);
+            groupBox3.Controls.Add(type_comboBox);
             groupBox3.Controls.Add(t_level_comboBox);
             groupBox3.Controls.Add(label3);
             groupBox3.Controls.Add(label2);
@@ -172,15 +172,15 @@
             byLevelCB.Text = "分樓層建立";
             byLevelCB.UseVisualStyleBackColor = true;
             // 
-            // comboBox1
+            // type_comboBox
             // 
-            comboBox1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new System.Drawing.Point(7, 280);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new System.Drawing.Size(140, 25);
-            comboBox1.TabIndex = 10;
+            type_comboBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
+            type_comboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            type_comboBox.FormattingEnabled = true;
+            type_comboBox.Location = new System.Drawing.Point(7, 280);
+            type_comboBox.Name = "type_comboBox";
+            type_comboBox.Size = new System.Drawing.Size(140, 25);
+            type_comboBox.TabIndex = 10;
             // 
             // t_level_comboBox
             // 
@@ -276,7 +276,7 @@
         private System.Windows.Forms.ComboBox b_level_comboBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.CheckBox byLevelCB;
-        private System.Windows.Forms.ComboBox comboBox1;
+        private System.Windows.Forms.ComboBox type_comboBox;
         private System.Windows.Forms.Label label3;
     }
 }

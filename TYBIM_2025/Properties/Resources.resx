@@ -124,6 +124,12 @@
   <data name="Lusir1" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\Lusir.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="自動生板" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\自動生板.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動翻柱" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\自動翻柱.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="自動翻模" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\自動翻模.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
