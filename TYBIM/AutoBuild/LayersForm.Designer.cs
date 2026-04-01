@@ -1,4 +1,4 @@
-﻿namespace TYBIM
+﻿namespace TYBIM.AutoBuild
 {
     partial class LayersForm
     {

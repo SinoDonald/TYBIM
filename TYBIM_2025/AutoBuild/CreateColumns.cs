@@ -5,9 +5,9 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static TYBIM.DataObject;
+using static TYBIM_2025.DataObject;
 
-namespace TYBIM
+namespace TYBIM_2025.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -142,7 +142,7 @@ namespace TYBIM
                             {
                                 int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
                                 int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
-                                for(int i = startId; i < endId; i++)
+                                for (int i = startId; i < endId; i++)
                                 {
                                     LevelElevation currentLevel = levelElevList[i];
                                     LevelElevation nextLevel = levelElevList[i + 1];
@@ -190,7 +190,7 @@ namespace TYBIM
                 axis = Line.CreateBound(center, new XYZ(center.X, center.Y, center.Z + 1)); // 軸心                                
                 angle = PointRotation(pts[0], pts[1]); // 角度
             }
-            return Tuple.Create<XYZ, Line, double>(center, axis, angle);
+            return Tuple.Create(center, axis, angle);
         }
         // 旋轉角度
         private static double PointRotation(XYZ p1, XYZ p2)
@@ -209,10 +209,10 @@ namespace TYBIM
         {
             List<string> createSymbolNames = new List<string>();
             List<string> symbolNames = createColumns.Select(x => x.name).Distinct().OrderBy(x => x).ToList();
-            foreach(string symbolName in symbolNames)
+            foreach (string symbolName in symbolNames)
             {
                 FamilySymbol isExistFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType) && x.Name.Equals(symbolName)).FirstOrDefault();
-                if(isExistFS == null) { createSymbolNames.Add(symbolName); } // 已經沒有這個FamilySymbol就加入
+                if (isExistFS == null) { createSymbolNames.Add(symbolName); } // 已經沒有這個FamilySymbol就加入
             }
             FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType)).FirstOrDefault();
             if (columnFS != null)
@@ -274,7 +274,7 @@ namespace TYBIM
                         transFS.Commit();
                     }
                 }
-                catch(Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
+                catch (Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
             }
         }
         /// <summary>
@@ -303,7 +303,7 @@ namespace TYBIM
         {
             FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
             {
-                String transactionName = failuresAccessor.GetTransactionName();
+                string transactionName = failuresAccessor.GetTransactionName();
                 IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
                 if (fmas.Count == 0) { return FailureProcessingResult.Continue; }
                 if (transactionName.Equals("EXEMPLE"))

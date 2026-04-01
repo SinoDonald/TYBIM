@@ -7,7 +7,7 @@ using System.Linq;
 using static TYBIM_2025.DataObject;
 using Line = Autodesk.Revit.DB.Line;
 
-namespace TYBIM_2025
+namespace TYBIM_2025.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -152,7 +152,7 @@ namespace TYBIM_2025
             HashSet<string> processedPairs = new HashSet<string>();
 
             // 計算最大牆厚 (轉為內部單位 feet)
-            double maxThick = (MAX_WALL_THICKNESS_CM / 30.48);
+            double maxThick = MAX_WALL_THICKNESS_CM / 30.48;
 
             for (int i = 0; i < allLines.Count; i++)
             {

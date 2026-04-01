@@ -10,7 +10,7 @@ using static TYBIM.DataObject;
 using ComboBox = System.Windows.Forms.ComboBox;
 using TaskDialog = Autodesk.Revit.UI.TaskDialog;
 
-namespace TYBIM
+namespace TYBIM.AutoBuild
 {
     public partial class LayersForm : System.Windows.Forms.Form
     {

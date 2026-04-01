@@ -4,9 +4,9 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static TYBIM.DataObject;
+using static TYBIM_2025.DataObject;
 
-namespace TYBIM
+namespace TYBIM_2025.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -72,7 +72,7 @@ namespace TYBIM
         {
             FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
             {
-                String transactionName = failuresAccessor.GetTransactionName();
+                string transactionName = failuresAccessor.GetTransactionName();
                 IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
                 if (fmas.Count == 0) { return FailureProcessingResult.Continue; }
                 if (transactionName.Equals("EXEMPLE"))

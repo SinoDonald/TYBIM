@@ -6,26 +6,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TYBIM
+namespace TYBIM_2025.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
     [Journaling(JournalingMode.NoCommandData)]
-    public class CreateFloor : IExternalCommand
+    public class CreateFloors : IExternalEventHandler
     {
-
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        public void Execute(UIApplication uiapp)
         {
-            UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
+            Application app = uiapp.Application; Document doc = uiapp.ActiveUIDocument.Document;
             View view = doc.ActiveView;
 
             if (!(view is View3D))
             {
                 TaskDialog.Show("提示", "請在 3D 視圖中執行此功能。");
-                return Result.Failed;
+                return;
             }
 
             try
@@ -34,7 +30,7 @@ namespace TYBIM
                     .OfClass(typeof(FloorType))
                     .FirstElementId();
 
-                if (defaultFloorTypeId == null) return Result.Failed;
+                if (defaultFloorTypeId == null) return;
 
                 List<Level> levels = new FilteredElementCollector(doc)
                     .OfClass(typeof(Level))
@@ -43,7 +39,7 @@ namespace TYBIM
                     .ToList();
 
                 IList<Element> allFramingElems = GetColumnsAndBeams(doc);
-                if (!allFramingElems.Any()) return Result.Failed;
+                if (!allFramingElems.Any()) return;
 
                 int createdFloorsCount = 0;
 
@@ -67,7 +63,7 @@ namespace TYBIM
                         {
                             BoundingBoxXYZ bb = e.get_BoundingBox(null);
                             if (bb == null) return false;
-                            return (bb.Min.Z - tolerance <= levelZ) && (bb.Max.Z + tolerance >= levelZ);
+                            return bb.Min.Z - tolerance <= levelZ && bb.Max.Z + tolerance >= levelZ;
                         }).ToList();
 
                         if (elemsAtThisLevel.Count == 0) continue;
@@ -140,12 +136,12 @@ namespace TYBIM
                 }
 
                 TaskDialog.Show("完成", $"處理完畢！共成功生成了 {createdFloorsCount} 塊樓板。");
-                return Result.Succeeded;
+                return;
             }
             catch (Exception ex)
             {
                 TaskDialog.Show("Revit API 錯誤", ex.ToString());
-                return Result.Failed;
+                return;
             }
         }
 
@@ -264,7 +260,7 @@ namespace TYBIM
         {
             FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
             {
-                String transactionName = failuresAccessor.GetTransactionName();
+                string transactionName = failuresAccessor.GetTransactionName();
                 IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
                 if (fmas.Count == 0) { return FailureProcessingResult.Continue; }
                 if (transactionName.Equals("EXEMPLE"))
@@ -285,6 +281,27 @@ namespace TYBIM
                 }
                 return FailureProcessingResult.Continue;
             }
+        }
+        // 更新Revit項目, Family有一個新的類型
+        class LoadOpts : IFamilyLoadOptions
+        {
+            public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
+            {
+                overwriteParameterValues = true;
+                return true;
+            }
+
+            public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues)
+            {
+                source = FamilySource.Family;
+                overwriteParameterValues = true;
+                return true;
+            }
+        }
+
+        public string GetName()
+        {
+            return "Event handler is create walls !!";
         }
     }
 }

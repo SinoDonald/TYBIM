@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TYBIM
+namespace TYBIM.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]

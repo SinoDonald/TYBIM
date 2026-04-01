@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TYBIM_2025
+namespace TYBIM_2025.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -67,7 +67,7 @@ namespace TYBIM_2025
                         {
                             BoundingBoxXYZ bb = e.get_BoundingBox(null);
                             if (bb == null) return false;
-                            return (bb.Min.Z - tolerance <= levelZ) && (bb.Max.Z + tolerance >= levelZ);
+                            return bb.Min.Z - tolerance <= levelZ && bb.Max.Z + tolerance >= levelZ;
                         }).ToList();
 
                         if (elemsAtThisLevel.Count == 0) continue;
@@ -264,7 +264,7 @@ namespace TYBIM_2025
         {
             FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
             {
-                String transactionName = failuresAccessor.GetTransactionName();
+                string transactionName = failuresAccessor.GetTransactionName();
                 IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
                 if (fmas.Count == 0) { return FailureProcessingResult.Continue; }
                 if (transactionName.Equals("EXEMPLE"))

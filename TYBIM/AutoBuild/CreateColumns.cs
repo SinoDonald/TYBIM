@@ -5,9 +5,9 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static TYBIM_2025.DataObject;
+using static TYBIM.DataObject;
 
-namespace TYBIM_2025
+namespace TYBIM.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
@@ -142,7 +142,7 @@ namespace TYBIM_2025
                             {
                                 int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
                                 int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
-                                for (int i = startId; i < endId; i++)
+                                for(int i = startId; i < endId; i++)
                                 {
                                     LevelElevation currentLevel = levelElevList[i];
                                     LevelElevation nextLevel = levelElevList[i + 1];
@@ -209,10 +209,10 @@ namespace TYBIM_2025
         {
             List<string> createSymbolNames = new List<string>();
             List<string> symbolNames = createColumns.Select(x => x.name).Distinct().OrderBy(x => x).ToList();
-            foreach (string symbolName in symbolNames)
+            foreach(string symbolName in symbolNames)
             {
                 FamilySymbol isExistFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType) && x.Name.Equals(symbolName)).FirstOrDefault();
-                if (isExistFS == null) { createSymbolNames.Add(symbolName); } // 已經沒有這個FamilySymbol就加入
+                if(isExistFS == null) { createSymbolNames.Add(symbolName); } // 已經沒有這個FamilySymbol就加入
             }
             FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType)).FirstOrDefault();
             if (columnFS != null)
@@ -274,7 +274,7 @@ namespace TYBIM_2025
                         transFS.Commit();
                     }
                 }
-                catch (Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
+                catch(Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
             }
         }
         /// <summary>

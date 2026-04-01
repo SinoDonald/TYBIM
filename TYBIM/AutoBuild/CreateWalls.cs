@@ -7,7 +7,7 @@ using System.Linq;
 using static TYBIM.DataObject;
 using Line = Autodesk.Revit.DB.Line;
 
-namespace TYBIM
+namespace TYBIM.AutoBuild
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
