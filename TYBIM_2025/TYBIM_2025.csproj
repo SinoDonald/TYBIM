@@ -34,6 +34,15 @@
     <Compile Update="AutoBuild\LayersForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="CSDSEM\AutoNumberForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="CSDSEM\ChooseMultiViewPlansForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="CSDSEM\LinkSelectionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

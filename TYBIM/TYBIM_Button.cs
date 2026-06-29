@@ -38,15 +38,16 @@ namespace TYBIM
                     }
                 }
             }
-            // 添加「自動翻柱」面板
             PushButton createColumnsBtn = ribbonPanel.AddItem(new PushButtonData("CreateColumns", "自動翻柱", addinAssmeblyPath, "TYBIM.AutoBuild.Start")) as PushButton;
             createColumnsBtn.LargeImage = convertFromBitmap(Properties.Resources.自動翻柱);
-            // 添加「自動生板」面板
             PushButton createFloorsBtn = ribbonPanel.AddItem(new PushButtonData("CreateFloors", "自動生板", addinAssmeblyPath, "TYBIM.AutoBuild.CreateFloor")) as PushButton;
             createFloorsBtn.LargeImage = convertFromBitmap(Properties.Resources.自動生板);
-            // 添加「自動裝修牆」面板
             PushButton createRoomWallBtn = ribbonPanel.AddItem(new PushButtonData("CreateRoomWall", "自動裝修牆", addinAssmeblyPath, "TYBIM.CreateRoomWall.RoomSelectionCommand")) as PushButton;
             createRoomWallBtn.LargeImage = convertFromBitmap(Properties.Resources.自動裝修牆);
+            PushButton autoPipeTagBtn = ribbonPanel.AddItem(new PushButtonData("AutoPipeTag", "自動標籤", addinAssmeblyPath, "TYBIM.CSDSEM.AutoPipeTag")) as PushButton;
+            autoPipeTagBtn.LargeImage = convertFromBitmap(Properties.Resources.自動標籤);
+            PushButton tagArrayBtn = ribbonPanel.AddItem(new PushButtonData("TagArray", "標籤排序", addinAssmeblyPath, "TYBIM.CSDSEM.TagArray")) as PushButton;
+            tagArrayBtn.LargeImage = convertFromBitmap(Properties.Resources.標籤排序);
 
             return Result.Succeeded;
         }
