@@ -44,6 +44,15 @@ namespace TYBIM_2025
             createFloorsBtn.LargeImage = convertFromBitmap(Properties.Resources.自動生板);
             PushButton createRoomWallBtn = ribbonPanel.AddItem(new PushButtonData("CreateRoomWall", "自動裝修牆", addinAssmeblyPath, "TYBIM_2025.CreateRoomWall.RoomSelectionCommand")) as PushButton;
             createRoomWallBtn.LargeImage = convertFromBitmap(Properties.Resources.自動裝修牆);
+
+            // 添加「CSD/SEM」面板
+            try { ribbonPanel = application.CreateRibbonPanel(ribbonName, "CSD/SEM"); }
+            catch
+            {
+                List<RibbonPanel> panel_list = new List<RibbonPanel>();
+                panel_list = application.GetRibbonPanels(ribbonName);
+                foreach (RibbonPanel rp in panel_list) { if (rp.Name == "CSD/SEM") { ribbonPanel = rp; } }
+            }
             PushButton autoPipeTagBtn = ribbonPanel.AddItem(new PushButtonData("AutoPipeTag", "自動標籤", addinAssmeblyPath, "TYBIM_2025.CSDSEM.AutoPipeTag")) as PushButton;
             autoPipeTagBtn.LargeImage = convertFromBitmap(Properties.Resources.自動標籤);
             PushButton tagArrayBtn = ribbonPanel.AddItem(new PushButtonData("TagArray", "標籤排序", addinAssmeblyPath, "TYBIM_2025.CSDSEM.TagArray")) as PushButton;
