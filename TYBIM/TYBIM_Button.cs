@@ -53,6 +53,8 @@ namespace TYBIM
                 panel_list = application.GetRibbonPanels(ribbonName);
                 foreach (RibbonPanel rp in panel_list) { if (rp.Name == "CSD/SEM") { ribbonPanel = rp; } }
             }
+            PushButton autoPipeOpenBtn = ribbonPanel.AddItem(new PushButtonData("AutoPipeOpen", "自動開口", addinAssmeblyPath, "TYBIM.CSDSEM.LinkOpening")) as PushButton;
+            autoPipeOpenBtn.LargeImage = convertFromBitmap(Properties.Resources.自動開口);
             PushButton autoPipeTagBtn = ribbonPanel.AddItem(new PushButtonData("AutoPipeTag", "自動標籤", addinAssmeblyPath, "TYBIM.CSDSEM.AutoPipeTag")) as PushButton;
             autoPipeTagBtn.LargeImage = convertFromBitmap(Properties.Resources.自動標籤);
             PushButton tagArrayBtn = ribbonPanel.AddItem(new PushButtonData("TagArray", "標籤排序", addinAssmeblyPath, "TYBIM.CSDSEM.TagArray")) as PushButton;
