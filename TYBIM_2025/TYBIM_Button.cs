@@ -60,6 +60,17 @@ namespace TYBIM_2025
             PushButton tagArrayBtn = ribbonPanel.AddItem(new PushButtonData("TagArray", "標籤排序", addinAssmeblyPath, "TYBIM_2025.CSDSEM.TagArray")) as PushButton;
             tagArrayBtn.LargeImage = convertFromBitmap(Properties.Resources.標籤排序);
 
+            // 添加「數量計算」面板
+            try { ribbonPanel = application.CreateRibbonPanel(ribbonName, "數量計算"); }
+            catch
+            {
+                List<RibbonPanel> panel_list = new List<RibbonPanel>();
+                panel_list = application.GetRibbonPanels(ribbonName);
+                foreach (RibbonPanel rp in panel_list) { if (rp.Name == "數量計算") { ribbonPanel = rp; } }
+            }
+            PushButton pipeAreaBtn = ribbonPanel.AddItem(new PushButtonData("PipeArea", "管道面積", addinAssmeblyPath, "TYBIM_2025.Calculate.PipeArea")) as PushButton;
+            pipeAreaBtn.LargeImage = convertFromBitmap(Properties.Resources.管道面積);
+
             return Result.Succeeded;
         }
         /// <summary>

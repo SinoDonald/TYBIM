@@ -117,35 +117,4 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="Lusir" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\Lusir.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Lusir1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\Lusir.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="標籤排序" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\標籤排序.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="管道面積" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\管道面積.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="自動標籤" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動標籤.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="自動生板" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動生板.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="自動翻柱" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動翻柱.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="自動翻模" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動翻模.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="自動裝修牆" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動裝修牆.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="自動開口" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動開口.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
 </root>

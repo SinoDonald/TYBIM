@@ -75,6 +75,13 @@
     <Compile Include="AutoBuild\CreateBeams.cs" />
     <Compile Include="AutoBuild\CreateColumns.cs" />
     <Compile Include="AutoBuild\CreateWalls.cs" />
+    <Compile Include="Calculate\CategorySelectionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Calculate\PipeArea.cs" />
+    <Compile Include="Calculate\ResultForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="CreateRoomWall\MainViewModel.cs" />
     <Compile Include="CreateRoomWall\RoomSelectionCommand.cs" />
     <Compile Include="CreateRoomWall\RoomSelectionWindow.xaml.cs">
@@ -126,10 +133,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Pic\Lusir.ico" />
+    <None Include="Pic\管道面積.jpg" />
     <None Include="Pic\自動開口.jpg" />
     <None Include="Pic\自動標籤.jpg" />
     <None Include="Pic\標籤排序.jpg" />
-    <None Include="Pic\自動標籤.png" />
     <None Include="Pic\自動裝修牆.jpg" />
     <None Include="Pic\自動翻柱.jpg" />
     <None Include="Pic\自動生板.jpg" />
@@ -140,6 +147,9 @@
   <ItemGroup>
     <EmbeddedResource Include="AutoBuild\LayersForm.resx">
       <DependentUpon>LayersForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Calculate\CategorySelectionForm.resx">
+      <DependentUpon>CategorySelectionForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="CSDSEM\AutoNumberForm.resx">
       <DependentUpon>AutoNumberForm.cs</DependentUpon>
