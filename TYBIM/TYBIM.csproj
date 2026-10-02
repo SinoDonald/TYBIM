@@ -75,6 +75,7 @@
     <Compile Include="AutoBuild\CreateBeams.cs" />
     <Compile Include="AutoBuild\CreateColumns.cs" />
     <Compile Include="AutoBuild\CreateWalls.cs" />
+    <Compile Include="AutoBuild\WallRegionGeometry.cs" />
     <Compile Include="Calculate\CategorySelectionForm.cs">
       <SubType>Form</SubType>
     </Compile>

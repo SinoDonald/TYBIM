@@ -47,6 +47,18 @@ namespace TYBIM.AutoBuild
         public static List<string> selectedLayers = new List<string>(); // 選取的圖層名稱
         public static bool byLevel = false; // 是否依樓層建立
         public static string columnType; // 選取的類型
+        public static ElementId wallTypeId;
+        internal class CadWallLine
+        {
+            public string Layer;
+            public ElementId ImportId;
+            public XYZ Start, End;
+        }
+        internal static List<CadWallLine> wallLines = new List<CadWallLine>();
+        internal static Dictionary<string, int> unsupportedWallCurves = new Dictionary<string, int>();
+        internal static Document cadDocument;
+        private readonly Dictionary<string, ElementId> wallTypes = new Dictionary<string, ElementId>();
+        private readonly List<string> columnFamilies = new List<string>();
 
         private void HideHorizontalScrollBar(ListView listView)
         {
@@ -101,10 +113,17 @@ namespace TYBIM.AutoBuild
             List<FamilySymbol> familySymbols = new FilteredElementCollector(uidoc.Document).OfClass(typeof(FamilySymbol)).WherePasses(logicalFilter)
                                                 .Cast<FamilySymbol>().OrderBy(x => x.FamilyName).Where(x => GetColumnFamilySymbol(x)).ToList();
             List<string> familyNames = familySymbols.Select(x => x.FamilyName).Distinct().ToList();
+            columnFamilies.AddRange(familyNames);
             foreach (string familyName in familyNames)
             {
                 type_comboBox.Items.Add(familyName);
             }
+            foreach (WallType type in new FilteredElementCollector(uidoc.Document).OfClass(typeof(WallType)).Cast<WallType>()
+                .Where(t => t.Kind == WallKind.Basic).OrderBy(t => t.Name))
+                wallTypes[type.Name] = type.Id;
+            foreach (RadioButton button in radioBtnPanel.Controls.OfType<RadioButton>())
+                button.CheckedChanged += ElementTypeChanged;
+            ElementTypeChanged(this, EventArgs.Empty);
             if (type_comboBox.SelectedIndex < 0)
             {
                 try
@@ -212,43 +231,65 @@ namespace TYBIM.AutoBuild
         /// <returns></returns>
         private List<string> GetCADLayerLines(Document doc)
         {
-            List<ImportInstance> importInstances = new FilteredElementCollector(doc).OfClass(typeof(ImportInstance)).Cast<ImportInstance>().Where(x => x.Category != null).ToList();
+            wallLines.Clear();
+            unsupportedWallCurves.Clear();
+            cadDocument = doc;
+            List<ImportInstance> importInstances = new FilteredElementCollector(doc, doc.ActiveView.Id).OfClass(typeof(ImportInstance)).Cast<ImportInstance>().Where(x => x.Category != null).ToList();
             foreach (ImportInstance importInstance in importInstances)
             {
                 if (importInstance.IsLinked)
                 {
-                    GeometryElement geomElement = importInstance.get_Geometry(options);
-                    foreach (GeometryObject geomObj in geomElement)
-                    {
-                        if (geomObj is GeometryInstance geomInstance)
-                        {
-                            GeometryElement instanceGeom = geomInstance.GetInstanceGeometry();
-                            foreach (GeometryObject obj in instanceGeom)
-                            {
-                                if (obj is PolyLine curve)
-                                {
-                                    // 取得圖層(實際是 GraphicsStyle 對應到 DWG 圖層)
-                                    ElementId styleId = curve.GraphicsStyleId;
-                                    GraphicsStyle style = doc.GetElement(styleId) as GraphicsStyle;
-                                    string layerName = style?.GraphicsStyleCategory?.Name;
-
-                                    if (!String.IsNullOrEmpty(layerName))
-                                    {
-                                        LineInfo lineInfo = new LineInfo();
-                                        lineInfo.layerName = layerName;
-                                        lineInfo.polyLine = curve;
-                                        lineInfos.Add(lineInfo);
-                                        if (!layers.Equals(layerName)) { layers.Add(layerName); } // 確保不重複添加圖層名稱
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    ReadCadGeometry(doc, importInstance.get_Geometry(options), Transform.Identity, null, importInstance.Id);
                 }
             }
             layers = layers.Distinct().OrderBy(x => x).ToList(); // 排序
 
             return layers;
+        }
+        private void ReadCadGeometry(Document doc, GeometryElement geometry, Transform transform, string inheritedLayer, ElementId importId)
+        {
+            if (geometry == null) return;
+            foreach (GeometryObject obj in geometry)
+            {
+                GraphicsStyle style = doc.GetElement(obj.GraphicsStyleId) as GraphicsStyle;
+                string layer = style?.GraphicsStyleCategory?.Name ?? inheritedLayer;
+                if (obj is GeometryInstance instance)
+                {
+                    ReadCadGeometry(doc, instance.GetSymbolGeometry(), transform.Multiply(instance.Transform), layer, importId);
+                    continue;
+                }
+                if (string.IsNullOrEmpty(layer)) continue;
+                if (obj is PolyLine polyline)
+                {
+                    var points = polyline.GetCoordinates().Select(transform.OfPoint).ToList();
+                    lineInfos.Add(new LineInfo { layerName = layer, polyLine = PolyLine.Create(points) });
+                    for (int i = 1; i < points.Count; i++)
+                        wallLines.Add(new CadWallLine { Layer = layer, ImportId = importId, Start = points[i - 1], End = points[i] });
+                    layers.Add(layer);
+                }
+                else if (obj is Autodesk.Revit.DB.Line line && line.IsBound)
+                {
+                    wallLines.Add(new CadWallLine { Layer = layer, ImportId = importId,
+                        Start = transform.OfPoint(line.GetEndPoint(0)), End = transform.OfPoint(line.GetEndPoint(1)) });
+                    layers.Add(layer);
+                }
+                else if (obj is Curve)
+                {
+                    if (!unsupportedWallCurves.ContainsKey(layer)) unsupportedWallCurves[layer] = 0;
+                    unsupportedWallCurves[layer]++;
+                    layers.Add(layer);
+                }
+            }
+        }
+        private void ElementTypeChanged(object sender, EventArgs e)
+        {
+            var selected = radioBtnPanel.Controls.OfType<RadioButton>().FirstOrDefault(b => b.Checked);
+            type_comboBox.Items.Clear();
+            if (selected != null && selected.Text == "牆")
+                type_comboBox.Items.AddRange(wallTypes.Keys.Cast<object>().ToArray());
+            else type_comboBox.Items.AddRange(columnFamilies.Cast<object>().ToArray());
+            if (type_comboBox.Items.Count > 0) type_comboBox.SelectedIndex = 0;
+            AdjustComboBoxDropDownListWidth(type_comboBox);
         }
         /// <summary>
         /// 建立圖層名稱
@@ -278,7 +319,7 @@ namespace TYBIM.AutoBuild
         /// </summary>
         private void CreateRadioButton()
         {
-            List<string> createElemTypes = new List<string>() { "柱"/*, "板", "樑", "牆" */};
+            List<string> createElemTypes = new List<string>() { "柱", "牆" };
             RadioButton[] radioButtons = new RadioButton[createElemTypes.Count];
             for (int i = 0; i < createElemTypes.Count; i++)
             {
@@ -347,7 +388,7 @@ namespace TYBIM.AutoBuild
 
             if (type_comboBox.SelectedIndex < 0)
             {
-                MessageBox.Show("請選擇柱類型");
+                MessageBox.Show("請選擇要建立的類型");
                 return;
             }
 
@@ -373,6 +414,11 @@ namespace TYBIM.AutoBuild
                     if (radioBtn.Text.Equals("柱"))
                     {
                         m_externalEvent_CreateColumns.Raise(); // 自動翻柱
+                    }
+                    else if (radioBtn.Text.Equals("牆"))
+                    {
+                        wallTypeId = wallTypes[type_comboBox.Text];
+                        m_externalEvent_CreateWalls.Raise();
                     }
                     //else if (radioBtn.Text.Equals("樑"))
                     //{
