@@ -125,27 +125,72 @@
     <value>..\Pic\Lusir.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="標籤排序" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\標籤排序.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\標籤排序.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="管道面積" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\管道面積.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\管道面積.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動標籤" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動標籤.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\自動標籤.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動生板" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動生板.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\自動生板.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動翻柱" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動翻柱.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\自動翻柱.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動翻模" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動翻模.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\自動翻模.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動裝修牆" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動裝修牆.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\自動裝修牆.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動開口" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動開口.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+    <value>..\Pic\自動開口.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動翻牆" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\自動翻牆.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動翻柱_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動翻柱(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動翻牆_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動翻牆(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動生板_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動生板(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動裝修牆_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動裝修牆(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動開口_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動開口(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動標籤_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動標籤(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="標籤排序_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\標籤排序(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="管道面積_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\管道面積(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動翻樑" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\自動翻樑.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動翻樑_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動翻樑(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動編號" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\自動編號.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="自動編號_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動編號(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="開口標籤" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\開口標籤.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="開口標籤_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\開口標籤(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

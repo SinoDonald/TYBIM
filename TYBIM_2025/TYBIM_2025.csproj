@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <OutputType>Library</OutputType>
@@ -52,6 +52,11 @@
     <Compile Update="CSDSEM\ProfessionalCodeForm.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="SEM\AutoNumberSettingForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="SEM\ProfessionalCodeForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Common\AutoNumberForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Common\ChooseMultiViewPlansForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Common\ProgressForm.cs"><SubType>Form</SubType></Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

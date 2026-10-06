@@ -1,119 +1,100 @@
-﻿using Autodesk.Revit.Attributes;
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static TYBIM_2025.DataObject;
 
 namespace TYBIM_2025.AutoBuild
 {
-    [Transaction(TransactionMode.Manual)]
-    [Regeneration(RegenerationOption.Manual)]
-    [Journaling(JournalingMode.NoCommandData)]
     public class CreateBeams : IExternalEventHandler
     {
         public void Execute(UIApplication app)
         {
+            if (app.ActiveUIDocument == null) return;
             Document doc = app.ActiveUIDocument.Document;
-
-            int count = 0;
-            List<string> selectedLayers = LayersForm.selectedLayers.ToList(); // 取得圖層名稱
-
-            using (Transaction trans = new Transaction(doc, "自動翻樑"))
+            Document source = LayersForm.cadDocument;
+            if (source == null || !source.IsValidObject || !doc.Equals(source))
             {
-                trans.Start();
-
-                foreach (string selectedLayer in selectedLayers)
-                {
-                    List<LineInfo> linesList = LayersForm.lineInfos.Where(x => x.layerName.Equals(selectedLayer)).ToList();
-                    foreach (LineInfo lineInfo in linesList)
-                    {
-                        PolyLine polyLine = lineInfo.polyLine;
-                        for (int i = 0; i < polyLine.GetCoordinates().Count - 1; i++)
-                        {
-                            XYZ start = polyLine.GetCoordinates()[i];
-                            XYZ end = polyLine.GetCoordinates()[i + 1];
-                            Curve curve = Line.CreateBound(start, end);
-                            count += DrawLine(doc, curve); // 在3D視圖中畫模型線
-                            //doc.Create.NewModelCurve(line, SketchPlane.Create(doc, Plane.CreateByNormalAndOrigin(XYZ.BasisZ, start)));
-                        }
-                    }
-                }
-
-                trans.Commit();
+                TaskDialog.Show("自動翻樑", "文件已切換，請在目前文件重新開啟自動翻樑。");
+                return;
             }
-
-            if (count > 0) { TaskDialog.Show("Revit", "已成功在3D視圖中畫出 " + count + " 條模型線。"); }
-        }
-        /// <summary>
-        /// 3D視圖中畫模型線
-        /// </summary>
-        /// <param name="doc"></param>
-        /// <param name="curve"></param>
-        private int DrawLine(Document doc, Curve curve)
-        {
-            int i = 0;
+            FamilySymbol symbol = doc.GetElement(LayersForm.beamSymbolId) as FamilySymbol;
+            Level level = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>()
+                .FirstOrDefault(l => l.Name == LayersForm.b_level_name);
+            if (symbol == null || symbol.Category.Id != new ElementId(BuiltInCategory.OST_StructuralFraming) || level == null)
+            {
+                TaskDialog.Show("自動翻樑", "請選擇有效的樑類型與參考樓層。");
+                return;
+            }
+            double tolerance = UnitUtils.ConvertToInternalUnits(1, UnitTypeId.Millimeters);
+            double minimumLength = Math.Max(tolerance, app.Application.ShortCurveTolerance);
+            var selected = new HashSet<string>(LayersForm.selectedLayers);
+            int nonHorizontal = 0, shortLines = 0, duplicates = 0;
+            int unsupported = LayersForm.unsupportedWallCurves.Where(p => selected.Contains(p.Key)).Sum(p => p.Value);
+            var axes = new List<Line>();
+            // DWG straight segments are beam centerlines. Place horizontal beams at the reference level.
+            foreach (var segment in LayersForm.wallLines.Where(l => selected.Contains(l.Layer)))
+            {
+                if (Math.Abs(segment.Start.Z - segment.End.Z) > tolerance) { nonHorizontal++; continue; }
+                XYZ start = new XYZ(segment.Start.X, segment.Start.Y, level.Elevation);
+                XYZ end = new XYZ(segment.End.X, segment.End.Y, level.Elevation);
+                if (start.DistanceTo(end) <= minimumLength) { shortLines++; continue; }
+                if (axes.Any(a => (a.GetEndPoint(0).DistanceTo(start) <= tolerance && a.GetEndPoint(1).DistanceTo(end) <= tolerance)
+                    || (a.GetEndPoint(0).DistanceTo(end) <= tolerance && a.GetEndPoint(1).DistanceTo(start) <= tolerance)))
+                { duplicates++; continue; }
+                axes.Add(Line.CreateBound(start, end));
+            }
+            if (axes.Count == 0)
+            {
+                TaskDialog.Show("自動翻樑", "所選圖層沒有可建樑的水平直線中心線。\n" +
+                    "過短線段：" + shortLines + "；非水平線段：" + nonHorizontal + "；不支援曲線：" + unsupported);
+                return;
+            }
+            int count = 0, failed = 0;
+            var errors = new List<string>();
             try
             {
-                Line line = Line.CreateBound(curve.Tessellate()[0], curve.Tessellate()[curve.Tessellate().Count - 1]);
-                XYZ normal = new XYZ(line.Direction.Z - line.Direction.Y, line.Direction.X - line.Direction.Z, line.Direction.Y - line.Direction.X); // 使用與線不平行的任意向量
-                Plane plane = Plane.CreateByNormalAndOrigin(normal, curve.Tessellate()[0]);
-                SketchPlane sketchPlane = SketchPlane.Create(doc, plane);
-                ModelCurve modelCurve = doc.Create.NewModelCurve(line, sketchPlane);
-                i = 1;
-            }
-            catch (Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
-
-            return i;
-        }
-        // 關閉警示視窗 
-        public class CloseWarnings : IFailuresPreprocessor
-        {
-            FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
-            {
-                string transactionName = failuresAccessor.GetTransactionName();
-                IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
-                if (fmas.Count == 0) { return FailureProcessingResult.Continue; }
-                if (transactionName.Equals("EXEMPLE"))
+                using (var transaction = new Transaction(doc, "自動翻樑"))
                 {
-                    foreach (FailureMessageAccessor fma in fmas)
+                    transaction.Start();
+                    if (!symbol.IsActive) { symbol.Activate(); doc.Regenerate(); }
+                    foreach (Line axis in axes)
                     {
-                        if (fma.GetSeverity() == FailureSeverity.Error)
+                        using (var item = new SubTransaction(doc))
                         {
-                            failuresAccessor.DeleteAllWarnings();
-                            return FailureProcessingResult.ProceedWithRollBack;
+                            item.Start();
+                            try
+                            {
+                                FamilyInstance beam = doc.Create.NewFamilyInstance(axis, symbol, level, StructuralType.Beam);
+                                if (beam == null) throw new InvalidOperationException("未建立樑實例。");
+                                Parameter startOffset = beam.get_Parameter(BuiltInParameter.STRUCTURAL_BEAM_END0_ELEVATION);
+                                Parameter endOffset = beam.get_Parameter(BuiltInParameter.STRUCTURAL_BEAM_END1_ELEVATION);
+                                if (startOffset != null && !startOffset.IsReadOnly) startOffset.Set(0.0);
+                                if (endOffset != null && !endOffset.IsReadOnly) endOffset.Set(0.0);
+                                if (item.Commit() == TransactionStatus.Committed) count++;
+                                else failed++;
+                            }
+                            catch (Exception ex)
+                            {
+                                if (item.GetStatus() == TransactionStatus.Started) item.RollBack();
+                                failed++;
+                                if (errors.Count < 3) errors.Add(ex.Message);
+                            }
                         }
-                        else { failuresAccessor.DeleteWarning(fma); }
+                    }
+                    if (transaction.Commit() != TransactionStatus.Committed)
+                    {
+                        TaskDialog.Show("自動翻樑", "建樑交易未成功提交，請檢查 Revit 的錯誤訊息。");
+                        return;
                     }
                 }
-                else
-                {
-                    foreach (FailureMessageAccessor fma in fmas) { failuresAccessor.DeleteAllWarnings(); }
-                }
-                return FailureProcessingResult.Continue;
+                TaskDialog.Show("自動翻樑", "已建立 " + count + " 支樑；失敗 " + failed + " 支。\n" +
+                    "過短線段：" + shortLines + "；非水平線段：" + nonHorizontal + "；重複線段：" + duplicates +
+                    "；不支援曲線：" + unsupported + (errors.Count == 0 ? "" : "\n" + string.Join("\n", errors)));
             }
+            catch (Exception ex) { TaskDialog.Show("自動翻樑", "建樑失敗：" + ex.Message); }
         }
-        // 更新Revit項目, Family有一個新的類型
-        class LoadOpts : IFamilyLoadOptions
-        {
-            public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
-            {
-                overwriteParameterValues = true;
-                return true;
-            }
-
-            public bool OnSharedFamilyFound(Family sharedFamily, bool familyInUse, out FamilySource source, out bool overwriteParameterValues)
-            {
-                source = FamilySource.Family;
-                overwriteParameterValues = true;
-                return true;
-            }
-        }
-
-        public string GetName()
-        {
-            return "Event handler is create walls !!";
-        }
+        public string GetName() { return "自動翻樑"; }
     }
 }

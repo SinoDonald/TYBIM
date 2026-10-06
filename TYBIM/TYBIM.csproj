@@ -87,16 +87,32 @@
 　　</Compile><Compile Include="CreateRoomWall\MainViewModel.cs" /><Compile Include="CreateRoomWall\RoomSelectionCommand.cs" /><Compile Include="CreateRoomWall\RoomSelectionWindow.xaml.cs"><DependentUpon>RoomSelectionWindow.xaml</DependentUpon></Compile><Compile Include="CSDSEM\AutoNumberForm.cs"><SubType>Form</SubType></Compile><Compile Include="CSDSEM\AutoNumberForm.Designer.cs"><DependentUpon>AutoNumberForm.cs</DependentUpon></Compile><Compile Include="CSDSEM\AutoPipeTag.cs" /><Compile Include="CSDSEM\ChooseMultiViewPlansForm.cs"><SubType>Form</SubType></Compile><Compile Include="CSDSEM\ChooseMultiViewPlansForm.Designer.cs"><DependentUpon>ChooseMultiViewPlansForm.cs</DependentUpon></Compile><Compile Include="CSDSEM\LinkOpening.cs" /><Compile Include="CSDSEM\LinkSelectionForm.cs"><SubType>Form</SubType></Compile><Compile Include="CSDSEM\LinkSelectionForm.Designer.cs"><DependentUpon>LinkSelectionForm.cs</DependentUpon></Compile><Compile Include="CSDSEM\ProfessionalCodeForm.cs"><SubType>Form</SubType></Compile><Compile Include="CSDSEM\ProfessionalCodeForm.Designer.cs"><DependentUpon>ProfessionalCodeForm.cs</DependentUpon></Compile><Compile Include="CSDSEM\TagArray.cs" /><Compile Include="DataObject.cs" /><Compile Include="FindLevel.cs" /><Compile Include="AutoBuild\LayersForm.cs"><SubType>Form</SubType></Compile><Compile Include="AutoBuild\LayersForm.Designer.cs"><DependentUpon>LayersForm.cs</DependentUpon></Compile><Compile Include="Properties\Resources.Designer.cs"><AutoGen>True</AutoGen><DesignTime>True</DesignTime><DependentUpon>Resources.resx</DependentUpon></Compile><Compile Include="AutoBuild\Start.cs" /><Compile Include="Properties\AssemblyInfo.cs" /><Compile Include="TYBIM_Button.cs" /></ItemGroup>
   <ItemGroup>
     <Content Include="Pic\Lusir.ico" />
-    <None Include="Pic\管道面積.jpg" />
-    <None Include="Pic\自動開口.jpg" />
-    <None Include="Pic\自動標籤.jpg" />
-    <None Include="Pic\標籤排序.jpg" />
-    <None Include="Pic\自動裝修牆.jpg" />
-    <None Include="Pic\自動翻柱.jpg" />
-    <None Include="Pic\自動生板.jpg" />
+    <None Include="Pic\管道面積.png" />
+    <None Include="Pic\自動開口.png" />
+    <None Include="Pic\自動標籤.png" />
+    <None Include="Pic\標籤排序.png" />
+    <None Include="Pic\自動裝修牆.png" />
+    <None Include="Pic\自動翻柱.png" />
+    <None Include="Pic\自動生板.png" />
     <None Include="app.config" />
     <None Include="packages.config" />
-    <None Include="Pic\自動翻模.jpg" />
+    <None Include="Pic\自動翻模.png" />
+    <None Include="Pic\自動編號.png" />
+    <None Include="Pic\原圖\自動編號(原圖).png" />
+    <None Include="Pic\開口標籤.png" />
+    <None Include="Pic\原圖\開口標籤(原圖).png" />
+    <None Include="Pic\自動翻牆.png" />
+    <None Include="Pic\自動翻樑.png" />
+    <None Include="Pic\原圖\自動翻樑(原圖).png" />
+    <None Include="Pic\TYBIM.png" />
+    <None Include="Pic\原圖\自動翻柱(原圖).png" />
+    <None Include="Pic\原圖\自動翻牆(原圖).png" />
+    <None Include="Pic\原圖\自動生板(原圖).png" />
+    <None Include="Pic\原圖\自動裝修牆(原圖).png" />
+    <None Include="Pic\原圖\自動開口(原圖).png" />
+    <None Include="Pic\原圖\自動標籤(原圖).png" />
+    <None Include="Pic\原圖\標籤排序(原圖).png" />
+    <None Include="Pic\原圖\管道面積(原圖).png" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AutoBuild\LayersForm.resx">
@@ -131,6 +147,60 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Compile Include="SEM\AutoNumber.cs">
+    </Compile>
+    <Compile Include="SEM\AutoNumberSettingForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SEM\AutoNumberSettingForm.Designer.cs">
+      <DependentUpon>AutoNumberSettingForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="SEM\AutoNumberSettingForm.resx">
+      <DependentUpon>AutoNumberSettingForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Include="SEM\AutoOpeningTag.cs">
+    </Compile>
+    <Compile Include="SEM\FindLevel.cs">
+    </Compile>
+    <Compile Include="SEM\LinkOpening.cs">
+    </Compile>
+    <Compile Include="SEM\MegedOpening.cs">
+    </Compile>
+    <Compile Include="SEM\NumberingConfig.cs">
+    </Compile>
+    <Compile Include="SEM\OpeningTagArray.cs">
+    </Compile>
+    <Compile Include="SEM\ProfessionalCodeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SEM\ProfessionalCodeForm.Designer.cs">
+      <DependentUpon>ProfessionalCodeForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="SEM\ProfessionalCodeForm.resx">
+      <DependentUpon>ProfessionalCodeForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Include="Common\AutoNumberForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Common\AutoNumberForm.Designer.cs">
+      <DependentUpon>AutoNumberForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Common\AutoNumberForm.resx">
+      <DependentUpon>AutoNumberForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Include="Common\ChooseMultiViewPlansForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Common\ChooseMultiViewPlansForm.Designer.cs">
+      <DependentUpon>ChooseMultiViewPlansForm.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Common\ChooseMultiViewPlansForm.resx">
+      <DependentUpon>ChooseMultiViewPlansForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <Compile Include="Common\ProgressForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

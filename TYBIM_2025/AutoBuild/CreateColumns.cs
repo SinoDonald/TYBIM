@@ -20,7 +20,13 @@ namespace TYBIM_2025.AutoBuild
 
         public void Execute(UIApplication app)
         {
+            if (app.ActiveUIDocument == null) return;
             Document doc = app.ActiveUIDocument.Document;
+            if (LayersForm.cadDocument == null || !LayersForm.cadDocument.IsValidObject || !doc.Equals(LayersForm.cadDocument))
+            {
+                TaskDialog.Show("自動翻柱", "文件已切換，請在目前文件重新開啟自動翻柱。");
+                return;
+            }
             Units units = doc.GetUnits(); // 取得專案單位
             ForgeTypeId lengthOptions = units.GetFormatOptions(SpecTypeId.Length).GetUnitTypeId(); // 取得長度單位
             if (lengthOptions == UnitTypeId.Meters) { unit_conversion = 0.3048; unit_string = "m"; }
@@ -36,7 +42,7 @@ namespace TYBIM_2025.AutoBuild
             ElementCategoryFilter columnsFilter = new ElementCategoryFilter(BuiltInCategory.OST_Columns);
             LogicalOrFilter logicalFilter = new LogicalOrFilter(structuralColumnsFilter, columnsFilter);
             List<FamilySymbol> familySymbols = new FilteredElementCollector(doc).OfClass(typeof(FamilySymbol)).WherePasses(logicalFilter).Cast<FamilySymbol>().OrderBy(x => x.FamilyName).ToList();
-            FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType)).FirstOrDefault();
+            FamilySymbol columnFS = doc.GetElement(LayersForm.columnSymbolId) as FamilySymbol;
 
             if (columnFS == null)
             {
@@ -129,7 +135,7 @@ namespace TYBIM_2025.AutoBuild
                 {
                     try
                     {
-                        columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType) && x.Name.Equals(createColumn.name)).FirstOrDefault();
+                        columnFS = familySymbols.Where(x => x.Family.Id == LayersForm.columnFamilyId && x.Name.Equals(createColumn.name)).FirstOrDefault();
                         if (columnFS != null)
                         {
                             if (!columnFS.IsActive) //如果柱的型號沒有啟用，則啟用它
@@ -142,11 +148,11 @@ namespace TYBIM_2025.AutoBuild
                             {
                                 int startId = levelElevList.FindIndex(x => x.level.Id.Equals(base_level.Id));
                                 int endId = levelElevList.FindIndex(x => x.level.Id.Equals(top_level.Id));
-                                for (int i = startId; i < endId; i++)
+                                for(int i = startId; i < endId; i++)
                                 {
                                     LevelElevation currentLevel = levelElevList[i];
                                     LevelElevation nextLevel = levelElevList[i + 1];
-                                    FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, currentLevel.level, StructuralType.Column); // 生成柱
+                                    FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, currentLevel.level, columnFS.Category.Id == new ElementId(BuiltInCategory.OST_Columns) ? StructuralType.NonStructural : StructuralType.Column); // 生成柱
                                     colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_PARAM).Set(nextLevel.level.Id); // 設定頂部樓層
                                     colunm.get_Parameter(BuiltInParameter.SCHEDULE_BASE_LEVEL_OFFSET_PARAM).Set(0); // 設定基準偏移
                                     colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_OFFSET_PARAM).Set(0); // 設定頂部偏移
@@ -156,7 +162,7 @@ namespace TYBIM_2025.AutoBuild
                             }
                             else
                             {
-                                FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, base_level, StructuralType.Column); // 生成柱
+                                FamilyInstance colunm = doc.Create.NewFamilyInstance(createColumn.center, columnFS, base_level, columnFS.Category.Id == new ElementId(BuiltInCategory.OST_Columns) ? StructuralType.NonStructural : StructuralType.Column); // 生成柱
                                 colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_PARAM).Set(top_level.Id); // 設定頂部樓層
                                 colunm.get_Parameter(BuiltInParameter.SCHEDULE_BASE_LEVEL_OFFSET_PARAM).Set(0); // 設定基準偏移
                                 colunm.get_Parameter(BuiltInParameter.SCHEDULE_TOP_LEVEL_OFFSET_PARAM).Set(0); // 設定頂部偏移
@@ -190,7 +196,7 @@ namespace TYBIM_2025.AutoBuild
                 axis = Line.CreateBound(center, new XYZ(center.X, center.Y, center.Z + 1)); // 軸心                                
                 angle = PointRotation(pts[0], pts[1]); // 角度
             }
-            return Tuple.Create(center, axis, angle);
+            return Tuple.Create<XYZ, Line, double>(center, axis, angle);
         }
         // 旋轉角度
         private static double PointRotation(XYZ p1, XYZ p2)
@@ -209,12 +215,12 @@ namespace TYBIM_2025.AutoBuild
         {
             List<string> createSymbolNames = new List<string>();
             List<string> symbolNames = createColumns.Select(x => x.name).Distinct().OrderBy(x => x).ToList();
-            foreach (string symbolName in symbolNames)
+            foreach(string symbolName in symbolNames)
             {
-                FamilySymbol isExistFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType) && x.Name.Equals(symbolName)).FirstOrDefault();
-                if (isExistFS == null) { createSymbolNames.Add(symbolName); } // 已經沒有這個FamilySymbol就加入
+                FamilySymbol isExistFS = familySymbols.Where(x => x.Family.Id == LayersForm.columnFamilyId && x.Name.Equals(symbolName)).FirstOrDefault();
+                if(isExistFS == null) { createSymbolNames.Add(symbolName); } // 已經沒有這個FamilySymbol就加入
             }
-            FamilySymbol columnFS = familySymbols.Where(x => x.FamilyName.Equals(LayersForm.columnType)).FirstOrDefault();
+            FamilySymbol columnFS = doc.GetElement(LayersForm.columnSymbolId) as FamilySymbol;
             if (columnFS != null)
             {
                 try
@@ -227,6 +233,8 @@ namespace TYBIM_2025.AutoBuild
                     using (Transaction transFS = new Transaction(familyDoc, "新增類型"))
                     {
                         transFS.Start();
+                        foreach (FamilyType sourceType in familyManager.Types)
+                            if (sourceType.Name == columnFS.Name) { familyManager.CurrentType = sourceType; break; }
 
                         foreach (string createSymbolName in createSymbolNames)
                         {
@@ -274,7 +282,7 @@ namespace TYBIM_2025.AutoBuild
                         transFS.Commit();
                     }
                 }
-                catch (Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
+                catch(Exception ex) { string error = ex.Message + "\n" + ex.ToString(); }
             }
         }
         /// <summary>
@@ -303,7 +311,7 @@ namespace TYBIM_2025.AutoBuild
         {
             FailureProcessingResult IFailuresPreprocessor.PreprocessFailures(FailuresAccessor failuresAccessor)
             {
-                string transactionName = failuresAccessor.GetTransactionName();
+                String transactionName = failuresAccessor.GetTransactionName();
                 IList<FailureMessageAccessor> fmas = failuresAccessor.GetFailureMessages();
                 if (fmas.Count == 0) { return FailureProcessingResult.Continue; }
                 if (transactionName.Equals("EXEMPLE"))

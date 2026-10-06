@@ -1,4 +1,4 @@
-using Autodesk.Revit.DB;
+﻿using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
@@ -16,8 +16,7 @@ namespace TYBIM_2025.AutoBuild
     {
         //外部事件處理:讀取其他的cs檔
         ExternalEvent m_externalEvent_CreateColumns; // 自動翻柱
-        ExternalEvent m_externalEvent_CreateBeams; // 自動翻樑
-        ExternalEvent m_externalEvent_CreateFloors; // 自動翻板
+        ExternalEvent m_externalEvent_CreateBeams;
         ExternalEvent m_externalEvent_CreateWalls; // 自動翻牆
 
         Options options = new Options
@@ -58,38 +57,44 @@ namespace TYBIM_2025.AutoBuild
         internal static Dictionary<string, int> unsupportedWallCurves = new Dictionary<string, int>();
         internal static Document cadDocument;
         private readonly Dictionary<string, ElementId> wallTypes = new Dictionary<string, ElementId>();
-        private readonly List<string> columnFamilies = new List<string>();
+        private readonly Dictionary<string, ElementId> familyTypes = new Dictionary<string, ElementId>();
+        private readonly string elementType;
+        public static ElementId beamSymbolId;
+        public static ElementId columnSymbolId;
+        public static ElementId columnFamilyId;
+
+        internal bool HasPendingEvent
+        {
+            get { return m_externalEvent_CreateColumns.IsPending || m_externalEvent_CreateWalls.IsPending || m_externalEvent_CreateBeams.IsPending; }
+        }
 
         private void HideHorizontalScrollBar(ListView listView)
         {
             int style = NativeMethods.GetWindowLong(listView.Handle, NativeMethods.GWL_STYLE);
             NativeMethods.SetWindowLong(listView.Handle, NativeMethods.GWL_STYLE, style & ~NativeMethods.WS_HSCROLL);
         }
-        public LayersForm(UIDocument uidoc)
+        public LayersForm(UIDocument uidoc, string elementType)
         {
+            this.elementType = elementType;
             InitializeComponent();
+            ConfigureLayout();
 
             IExternalEventHandler handler_CreateColumns = new CreateColumns(); // 自動翻柱
             ExternalEvent externalEvent_CreateColumns = ExternalEvent.Create(handler_CreateColumns);
             m_externalEvent_CreateColumns = externalEvent_CreateColumns;
-            IExternalEventHandler handler_CreateBeams = new CreateBeams(); // 自動翻樑
-            ExternalEvent externalEvent_CreateBeams = ExternalEvent.Create(handler_CreateBeams);
-            m_externalEvent_CreateBeams = externalEvent_CreateBeams;
-            IExternalEventHandler handler_CreateFloors = new CreateFloors(); // 自動翻板
-            ExternalEvent externalEvent_CreateFloors = ExternalEvent.Create(handler_CreateFloors);
-            m_externalEvent_CreateFloors = externalEvent_CreateFloors;
             IExternalEventHandler handler_CreateWalls = new CreateWalls(); // 自動翻牆
             ExternalEvent externalEvent_CreateWalls = ExternalEvent.Create(handler_CreateWalls);
             m_externalEvent_CreateWalls = externalEvent_CreateWalls;
+
+            m_externalEvent_CreateBeams = ExternalEvent.Create(new CreateBeams());
 
             lineInfos = new List<LineInfo>();
             layers = new List<string>();
             layers = GetCADLayerLines(uidoc.Document); // 取得CAD圖層線條
             CreateLayerNames(layers); // 建立圖層名稱
-            CreateRadioButton(); // 新增RadioButton
 
             // 基準樓層與頂部樓層
-            List<Level> levels = new FilteredElementCollector(uidoc.Document).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Name).ToList();
+            List<Level> levels = new FilteredElementCollector(uidoc.Document).OfClass(typeof(Level)).Cast<Level>().OrderBy(x => x.Elevation).ToList();
             foreach (Level level in levels)
             {
                 string level_name = level.Name;
@@ -101,37 +106,34 @@ namespace TYBIM_2025.AutoBuild
             {
                 b_level_comboBox.Text = "請選擇基準樓層";
             }
-            if (t_level_comboBox.SelectedIndex < 0)
+            if (elementType != "樑" && t_level_comboBox.SelectedIndex < 0)
             {
                 t_level_comboBox.Text = "請選擇頂部樓層";
             }
 
-            // 篩選出具有柱寬、柱深, 或者b、h參數的族群
-            ElementCategoryFilter structuralColumnsFilter = new ElementCategoryFilter(BuiltInCategory.OST_StructuralColumns);
-            ElementCategoryFilter columnsFilter = new ElementCategoryFilter(BuiltInCategory.OST_Columns);
-            LogicalOrFilter logicalFilter = new LogicalOrFilter(structuralColumnsFilter, columnsFilter);
-            List<FamilySymbol> familySymbols = new FilteredElementCollector(uidoc.Document).OfClass(typeof(FamilySymbol)).WherePasses(logicalFilter)
-                                                .Cast<FamilySymbol>().OrderBy(x => x.FamilyName).Where(x => GetColumnFamilySymbol(x)).ToList();
-            List<string> familyNames = familySymbols.Select(x => x.FamilyName).Distinct().ToList();
-            columnFamilies.AddRange(familyNames);
-            foreach (string familyName in familyNames)
+            if (elementType == "牆")
             {
-                type_comboBox.Items.Add(familyName);
+                foreach (WallType type in new FilteredElementCollector(uidoc.Document).OfClass(typeof(WallType)).Cast<WallType>()
+                    .Where(t => t.Kind == WallKind.Basic).OrderBy(t => t.Name))
+                    wallTypes[type.Name] = type.Id;
+                type_comboBox.Items.AddRange(wallTypes.Keys.Cast<object>().ToArray());
             }
-            foreach (WallType type in new FilteredElementCollector(uidoc.Document).OfClass(typeof(WallType)).Cast<WallType>()
-                .Where(t => t.Kind == WallKind.Basic).OrderBy(t => t.Name))
-                wallTypes[type.Name] = type.Id;
-            foreach (RadioButton button in radioBtnPanel.Controls.OfType<RadioButton>())
-                button.CheckedChanged += ElementTypeChanged;
-            ElementTypeChanged(this, EventArgs.Empty);
-            if (type_comboBox.SelectedIndex < 0)
+            else
             {
-                try
+                ElementFilter filter = elementType == "柱"
+                    ? (ElementFilter)new LogicalOrFilter(new ElementCategoryFilter(BuiltInCategory.OST_Columns),
+                        new ElementCategoryFilter(BuiltInCategory.OST_StructuralColumns))
+                    : new ElementCategoryFilter(BuiltInCategory.OST_StructuralFraming);
+                foreach (FamilySymbol symbol in new FilteredElementCollector(uidoc.Document).OfClass(typeof(FamilySymbol))
+                    .WherePasses(filter).Cast<FamilySymbol>().OrderBy(s => s.FamilyName).ThenBy(s => s.Name))
                 {
-                    type_comboBox.Text = type_comboBox.Items[0].ToString();
+                    string category = symbol.Category.Id == new ElementId(BuiltInCategory.OST_Columns) ? "一般柱" : "結構柱";
+                    string display = (elementType == "柱" ? "[" + category + "] " : "") + symbol.FamilyName + "：" + symbol.Name;
+                    familyTypes[display] = symbol.Id;
                 }
-                catch (Exception) { }
+                type_comboBox.Items.AddRange(familyTypes.Keys.Cast<object>().ToArray());
             }
+            if (type_comboBox.Items.Count > 0) type_comboBox.SelectedIndex = 0;
 
             // 調整下拉選單寬度
             AdjustComboBoxDropDownListWidth(b_level_comboBox);
@@ -145,37 +147,26 @@ namespace TYBIM_2025.AutoBuild
             foreach (ColumnHeader column in listView1.Columns) { column.Width = listView1.ClientSize.Width / listView1.Columns.Count; }
             HideHorizontalScrollBar(listView1); // 自訂ListView滾輪只有上下滑動
 
-            // 測試：預設基準、頂部樓層
-            try
-            {
-                b_level_comboBox.Text = b_level_comboBox.Items[0].ToString();
-                t_level_comboBox.Text = t_level_comboBox.Items[1].ToString();
-            }
-            catch (Exception ex)
-            {
-                TaskDialog.Show("錯誤", "設定預設樓層時發生錯誤：" + ex.Message);
-            }
+            if (b_level_comboBox.Items.Count > 0) b_level_comboBox.SelectedIndex = 0;
+            if (t_level_comboBox.Items.Count > 1) t_level_comboBox.SelectedIndex = 1;
         }
-        /// <summary>
-        /// 具有柱寬、柱深, 或者b、h參數的族群
-        /// </summary>
-        /// <param name="symbol"></param>
-        /// <returns></returns>
+
         private bool GetColumnFamilySymbol(FamilySymbol symbol)
         {
-            Parameter paraWidth = symbol.LookupParameter("柱深");
-            Parameter paraHeight = symbol.LookupParameter("柱寬");
-            if (null != paraWidth && null != paraHeight)
+            return (symbol.LookupParameter("柱寬") != null && symbol.LookupParameter("柱深") != null)
+                || (symbol.LookupParameter("b") != null && symbol.LookupParameter("h") != null);
+        }
+        private void ConfigureLayout()
+        {
+            Text = "自動翻" + elementType;
+            bool isBeam = elementType == "樑";
+            label1.Text = isBeam ? "參考樓層" : "基準樓層";
+            label2.Visible = t_level_comboBox.Visible = byLevelCB.Visible = !isBeam;
+            if (isBeam)
             {
-                return true;
+                label3.Location = label2.Location;
+                type_comboBox.Location = t_level_comboBox.Location;
             }
-            paraWidth = symbol.LookupParameter("b");
-            paraHeight = symbol.LookupParameter("h");
-            if (null != paraWidth && null != paraHeight)
-            {
-                return true;
-            }
-            return false;
         }
         /// <summary>
         /// 調整下拉選單寬度
@@ -210,7 +201,7 @@ namespace TYBIM_2025.AutoBuild
                         }
                     }
                 }
-                senderComboBox.DropDownWidth = width;
+                senderComboBox.DropDownWidth = Math.Min(width + 16, Screen.FromControl(senderComboBox).WorkingArea.Width - 32);
             }
             catch
             {
@@ -281,16 +272,6 @@ namespace TYBIM_2025.AutoBuild
                 }
             }
         }
-        private void ElementTypeChanged(object sender, EventArgs e)
-        {
-            var selected = radioBtnPanel.Controls.OfType<RadioButton>().FirstOrDefault(b => b.Checked);
-            type_comboBox.Items.Clear();
-            if (selected != null && selected.Text == "牆")
-                type_comboBox.Items.AddRange(wallTypes.Keys.Cast<object>().ToArray());
-            else type_comboBox.Items.AddRange(columnFamilies.Cast<object>().ToArray());
-            if (type_comboBox.Items.Count > 0) type_comboBox.SelectedIndex = 0;
-            AdjustComboBoxDropDownListWidth(type_comboBox);
-        }
         /// <summary>
         /// 建立圖層名稱
         /// </summary>
@@ -313,25 +294,6 @@ namespace TYBIM_2025.AutoBuild
             //{
             //    if (item.Text.Equals("WALL") || item.Text.Contains("OPEN")) { item.Checked = true; }
             //}
-        }
-        /// <summary>
-        /// 新增RadioButton
-        /// </summary>
-        private void CreateRadioButton()
-        {
-            List<string> createElemTypes = new List<string>() { "柱", "牆" };
-            RadioButton[] radioButtons = new RadioButton[createElemTypes.Count];
-            for (int i = 0; i < createElemTypes.Count; i++)
-            {
-                radioButtons[i] = new RadioButton();
-                radioButtons[i].Font = new Font("微軟正黑體", 10, FontStyle.Regular);
-                radioButtons[i].Text = createElemTypes[i];
-                radioButtons[i].AutoSize = true;
-                radioButtons[i].Location = new System.Drawing.Point(5, 5 + i * 25);
-                radioBtnPanel.Controls.Add(radioButtons[i]);
-                if (i == 0) { radioButtons[0].Checked = true; } // 預設第一個
-            }
-            radioButtons[createElemTypes.Count - 1].Checked = true; // 預設為牆
         }
         // 全選
         private void allRbtn_CheckedChanged(object sender, EventArgs e)
@@ -357,24 +319,25 @@ namespace TYBIM_2025.AutoBuild
         // 確定
         private void sureBtn_Click(object sender, System.EventArgs e)
         {
+            if (HasPendingEvent) return;
             selectedLayers.Clear(); // 清空
 
             if (b_level_comboBox.SelectedIndex < 0)
             {
-                MessageBox.Show("請選擇基準樓層");
+                MessageBox.Show(elementType == "樑" ? "請選擇參考樓層" : "請選擇基準樓層");
                 return;
             }
-            if (t_level_comboBox.SelectedIndex < 0)
+            if (elementType != "樑" && t_level_comboBox.SelectedIndex < 0)
             {
                 MessageBox.Show("請選擇頂部樓層");
                 return;
             }
-            if (b_level_comboBox.Text == t_level_comboBox.Text)
+            if (elementType != "樑" && b_level_comboBox.Text == t_level_comboBox.Text)
             {
                 MessageBox.Show("基準樓層與頂部樓層相同，請重新選擇！");
                 return;
             }
-            if (levelElevations.ContainsKey(b_level_comboBox.Text) && levelElevations.ContainsKey(t_level_comboBox.Text))
+            if (elementType != "樑" && levelElevations.ContainsKey(b_level_comboBox.Text) && levelElevations.ContainsKey(t_level_comboBox.Text))
             {
                 double b_elevation = levelElevations[b_level_comboBox.Text];
                 double t_elevation = levelElevations[t_level_comboBox.Text];
@@ -394,60 +357,44 @@ namespace TYBIM_2025.AutoBuild
 
             try
             {
-                ListView listView = groupBox1.Controls.OfType<ListView>().FirstOrDefault();
-                selectedLayers = listView.CheckedItems.Cast<ListViewItem>().Select(item => item.Text).ToList();
-                RadioButton radioBtn = radioBtnPanel.Controls.OfType<RadioButton>().FirstOrDefault(rb => rb.Checked);
-                if(byLevelCB.Checked)
-                {
-                    byLevel = true; // 依樓層建立
-                }
-                else
-                {
-                    byLevel = false; // 不依樓層建立
-                }
-                if (selectedLayers.Count > 0)
-                {
-                    b_level_name = b_level_comboBox.Text; // 基準樓層名稱
-                    t_level_name = t_level_comboBox.Text; // 頂部樓層名稱
-                    columnType = type_comboBox.Text; // 柱的類型
-
-                    if (radioBtn.Text.Equals("柱"))
-                    {
-                        m_externalEvent_CreateColumns.Raise(); // 自動翻柱
-                    }
-                    else if (radioBtn.Text.Equals("牆"))
-                    {
-                        wallTypeId = wallTypes[type_comboBox.Text];
-                        m_externalEvent_CreateWalls.Raise();
-                    }
-                    //else if (radioBtn.Text.Equals("樑"))
-                    //{
-                    //    m_externalEvent_CreateBeams.Raise(); // 自動翻樑
-                    //}
-                    //else if (radioBtn.Text.Equals("板"))
-                    //{
-                    //    m_externalEvent_CreateFloors.Raise(); // 自動翻板
-                    //}
-                    //else
-                    //{
-                    //    m_externalEvent_CreateWalls.Raise(); // 自動翻牆
-                    //}
-                }
-                else if (radioBtn.Text.Equals("板"))
-                {
-                    m_externalEvent_CreateFloors.Raise(); // 自動翻板
-                }
-                else
+                selectedLayers = listView1.CheckedItems.Cast<ListViewItem>().Select(item => item.Text).ToList();
+                if (selectedLayers.Count == 0)
                 {
                     MessageBox.Show("請至少選擇一個圖層。");
                     return;
+                }
+                byLevel = byLevelCB.Checked;
+                b_level_name = b_level_comboBox.Text;
+                t_level_name = t_level_comboBox.Text;
+                if (elementType == "柱")
+                {
+                    columnSymbolId = familyTypes[type_comboBox.Text];
+                    FamilySymbol symbol = cadDocument.GetElement(columnSymbolId) as FamilySymbol;
+                    if (symbol == null) { MessageBox.Show("所選柱類型已不存在，請重新開啟視窗。"); return; }
+                    if (!GetColumnFamilySymbol(symbol))
+                    {
+                        MessageBox.Show("所選柱類型需具備「柱寬／柱深」或「b／h」參數，才能依 CAD 尺寸翻柱。");
+                        return;
+                    }
+                    columnType = symbol.FamilyName;
+                    columnFamilyId = symbol.Family.Id;
+                    m_externalEvent_CreateColumns.Raise();
+                }
+                else if (elementType == "樑")
+                {
+                    beamSymbolId = familyTypes[type_comboBox.Text];
+                    m_externalEvent_CreateBeams.Raise();
+                }
+                else
+                {
+                    wallTypeId = wallTypes[type_comboBox.Text];
+                    m_externalEvent_CreateWalls.Raise();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("發生錯誤: " + ex.Message);
             }
-            //Close();
         }
         // 取消
         private void cancelBtn_Click(object sender, System.EventArgs e)
