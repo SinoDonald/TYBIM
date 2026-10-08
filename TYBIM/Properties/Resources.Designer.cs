@@ -143,9 +143,9 @@ namespace TYBIM.Properties {
         /// <summary>
         ///   查詢類型 System.Drawing.Bitmap 的當地語系化資源。
         /// </summary>
-        internal static System.Drawing.Bitmap 自動生板 {
+        internal static System.Drawing.Bitmap 自動翻板 {
             get {
-                object obj = ResourceManager.GetObject("自動生板", resourceCulture);
+                object obj = ResourceManager.GetObject("自動翻板", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
@@ -153,9 +153,9 @@ namespace TYBIM.Properties {
         /// <summary>
         ///   查詢類型 System.Drawing.Bitmap 的當地語系化資源。
         /// </summary>
-        internal static System.Drawing.Bitmap 自動生板_原圖 {
+        internal static System.Drawing.Bitmap 自動翻板_原圖 {
             get {
-                object obj = ResourceManager.GetObject("自動生板_原圖", resourceCulture);
+                object obj = ResourceManager.GetObject("自動翻板_原圖", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

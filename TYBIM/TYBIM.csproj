@@ -71,6 +71,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutoBuild\CreateFloor.cs" />
+    <Compile Include="AutoBuild\FloorOverlapGuard.cs" />
+    <Compile Include="AutoBuild\FloorRegionBuilder.cs" />
+    <Compile Include="AutoBuild\FloorFootprintGeometry.cs" />
+    <Compile Include="AutoBuild\FloorLevelMembership.cs" />
     <Compile Include="AutoBuild\CreateFloors.cs" />
     <Compile Include="AutoBuild\CreateBeams.cs" />
     <Compile Include="AutoBuild\CreateColumns.cs" />
@@ -93,7 +97,7 @@
     <None Include="Pic\標籤排序.png" />
     <None Include="Pic\自動裝修牆.png" />
     <None Include="Pic\自動翻柱.png" />
-    <None Include="Pic\自動生板.png" />
+    <None Include="Pic\自動翻板.png" />
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Pic\自動翻模.png" />
@@ -107,7 +111,7 @@
     <None Include="Pic\TYBIM.png" />
     <None Include="Pic\原圖\自動翻柱(原圖).png" />
     <None Include="Pic\原圖\自動翻牆(原圖).png" />
-    <None Include="Pic\原圖\自動生板(原圖).png" />
+    <None Include="Pic\原圖\自動翻板(原圖).png" />
     <None Include="Pic\原圖\自動裝修牆(原圖).png" />
     <None Include="Pic\原圖\自動開口(原圖).png" />
     <None Include="Pic\原圖\自動標籤(原圖).png" />

@@ -133,8 +133,8 @@
   <data name="自動標籤" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\自動標籤.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="自動生板" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\自動生板.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="自動翻板" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\自動翻板.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動翻柱" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\自動翻柱.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -157,8 +157,8 @@
   <data name="自動翻牆_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\原圖\自動翻牆(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="自動生板_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Pic\原圖\自動生板(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="自動翻板_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Pic\原圖\自動翻板(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="自動裝修牆_原圖" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Pic\原圖\自動裝修牆(原圖).png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
