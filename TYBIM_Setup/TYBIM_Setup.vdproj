@@ -1,4 +1,4 @@
-"DeployProject"
+﻿"DeployProject"
 {
 "VSVersion" = "3:800"
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
@@ -13,6 +13,54 @@
 "SccProvider" = "8:"
     "Hierarchy"
     {
+        "Entry"
+        {
+        "MsmKey" = "8:_02DF57A347C84C4FBFCFB3E160BAB899"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_4A5E87AE4B92482BA0134BC75A8DBE85"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_53AF989E949A4BE68D0B3322F617F4DC"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_5F15BFB2291543C6A4D2C6506D9D21DB"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_8C66237D8DD947159EA9802007C7A042"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_BF27B199EE3749EBB0543ACB58336F67"
+        "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_BF27B199EE3749EBB0543ACB58336F67"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_UNDEFINED"
+        "OwnerKey" = "8:_02DF57A347C84C4FBFCFB3E160BAB899"
+        "MsmSig" = "8:_UNDEFINED"
+        }
     }
     "Configurations"
     {
@@ -108,6 +156,148 @@
         }
         "File"
         {
+            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_02DF57A347C84C4FBFCFB3E160BAB899"
+            {
+            "AssemblyRegister" = "3:1"
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:TYBIM_2025, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64"
+                "ScatterAssemblies"
+                {
+                    "_02DF57A347C84C4FBFCFB3E160BAB899"
+                    {
+                    "Name" = "8:TYBIM_2025.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:安裝目錄(2018-2027)\\TYBIM\\TYBIM_2025.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9686E6F1984855B2ECF422FE9200B9"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_4A5E87AE4B92482BA0134BC75A8DBE85"
+            {
+            "SourcePath" = "8:安裝目錄(2018-2027)\\2026\\TYBIM.addin"
+            "TargetName" = "8:TYBIM.addin"
+            "Tag" = "8:"
+            "Folder" = "8:_AFF7D092288E47E8A2D520D127CC8A87"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_53AF989E949A4BE68D0B3322F617F4DC"
+            {
+            "SourcePath" = "8:安裝目錄(2018-2027)\\2024\\TYBIM.addin"
+            "TargetName" = "8:TYBIM.addin"
+            "Tag" = "8:"
+            "Folder" = "8:_9F55C5EEC7D941DC9ADF19DC14412DC6"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_5F15BFB2291543C6A4D2C6506D9D21DB"
+            {
+            "SourcePath" = "8:安裝目錄(2018-2027)\\2025\\TYBIM.addin"
+            "TargetName" = "8:TYBIM.addin"
+            "Tag" = "8:"
+            "Folder" = "8:_A9F6519F9B1440A9B684AF4C795EA2DD"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8C66237D8DD947159EA9802007C7A042"
+            {
+            "SourcePath" = "8:安裝目錄(2018-2027)\\2027\\TYBIM.addin"
+            "TargetName" = "8:TYBIM.addin"
+            "Tag" = "8:"
+            "Folder" = "8:_4B74999207FB4092A2D1126551370BAD"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
+            "{9F6F8455-1EF1-4B85-886A-4223BCC8E7F7}:_BF27B199EE3749EBB0543ACB58336F67"
+            {
+            "AssemblyRegister" = "3:1"
+            "AssemblyIsInGAC" = "11:FALSE"
+            "AssemblyAsmDisplayName" = "8:TYBIM, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64"
+                "ScatterAssemblies"
+                {
+                    "_BF27B199EE3749EBB0543ACB58336F67"
+                    {
+                    "Name" = "8:TYBIM.dll"
+                    "Attributes" = "3:512"
+                    }
+                }
+            "SourcePath" = "8:安裝目錄(2018-2027)\\TYBIM\\TYBIM.dll"
+            "TargetName" = "8:"
+            "Tag" = "8:"
+            "Folder" = "8:_FA9686E6F1984855B2ECF422FE9200B9"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:FALSE"
+            "IsolateTo" = "8:"
+            }
         }
         "FileType"
         {
@@ -146,6 +336,61 @@
             "Property" = "8:TARGETDIR"
                 "Folders"
                 {
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_4B74999207FB4092A2D1126551370BAD"
+                    {
+                    "Name" = "8:2027"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_E6486B14D4A141698440CD48AB88AA27"
+                        "Folders"
+                        {
+                        }
+                    }
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_9F55C5EEC7D941DC9ADF19DC14412DC6"
+                    {
+                    "Name" = "8:2024"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_4905A1B4B6524E5CB1B844A85F53740A"
+                        "Folders"
+                        {
+                        }
+                    }
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_A9F6519F9B1440A9B684AF4C795EA2DD"
+                    {
+                    "Name" = "8:2025"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_9EC309DE470E4FA980048F22D22EA79E"
+                        "Folders"
+                        {
+                        }
+                    }
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_AFF7D092288E47E8A2D520D127CC8A87"
+                    {
+                    "Name" = "8:2026"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_12D3FCD5A2E84B2B93F8BB562F672F1C"
+                        "Folders"
+                        {
+                        }
+                    }
+                    "{9EF0B969-E518-4E46-987F-47570745A589}:_FA9686E6F1984855B2ECF422FE9200B9"
+                    {
+                    "Name" = "8:TYBIM"
+                    "AlwaysCreate" = "11:FALSE"
+                    "Condition" = "8:"
+                    "Transitive" = "11:FALSE"
+                    "Property" = "8:_840A9952972F478EAAE8C20662F05C20"
+                        "Folders"
+                        {
+                        }
+                    }
                 }
             }
         }
@@ -164,15 +409,15 @@
         {
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:拓源數位科技"
-        "ProductCode" = "8:{D287B45E-9C5E-4E62-9C9D-66629612EEFB}"
-        "PackageCode" = "8:{45A0EDA0-5EA3-489F-B2E9-257F9D3AB5CB}"
+        "ProductCode" = "8:{B6AA96B0-B2BE-4566-8497-112B72F0C77B}"
+        "PackageCode" = "8:{48F43F2A-39A1-409A-8963-885C0AD203B3}"
         "UpgradeCode" = "8:{5BC41E45-4CF3-4EBE-B263-94479C85CB00}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:FALSE"
-        "ProductVersion" = "8:1.1.3"
+        "ProductVersion" = "8:1.1.4"
         "Manufacturer" = "8:拓源數位科技"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"

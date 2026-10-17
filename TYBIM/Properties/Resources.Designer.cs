@@ -24,6 +24,14 @@ namespace TYBIM.Properties {
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Resources {
 
+        internal static System.Drawing.Bitmap 間距標籤 {
+            get { return (System.Drawing.Bitmap)ResourceManager.GetObject("間距標籤", resourceCulture); }
+        }
+
+        internal static System.Drawing.Bitmap 間距標籤_原圖 {
+            get { return (System.Drawing.Bitmap)ResourceManager.GetObject("間距標籤_原圖", resourceCulture); }
+        }
+
         private static global::System.Resources.ResourceManager resourceMan;
 
         private static global::System.Globalization.CultureInfo resourceCulture;

@@ -84,6 +84,17 @@ namespace TYBIM_2025
             openingTagArrayBtn.ToolTip = "將開口標籤移至空白處, 盡量避免標籤重疊。";
             openingTagArrayBtn.ToolTipImage = convertFromBitmap(Properties.Resources.標籤排序_原圖, 250);
 
+            // 添加「建築」面板
+            try { ribbonPanel = application.CreateRibbonPanel(ribbonName, "建築"); }
+            catch
+            {
+                ribbonPanel = application.GetRibbonPanels(ribbonName).Find(panel => panel.Name == "建築");
+            }
+            PushButton spacingTagBtn = ribbonPanel.AddItem(new PushButtonData("SpacingTag", "間距標籤", addinAssmeblyPath, "TYBIM_2025.Architecture.SpacingTag")) as PushButton;
+            spacingTagBtn.LargeImage = convertFromBitmap(Properties.Resources.間距標籤);
+            spacingTagBtn.ToolTip = "選取建築元件，指定量測方向後自動在外側建立連續尺寸；亦可手動定位、選擇牆面基準或手選參考面。";
+            spacingTagBtn.ToolTipImage = convertFromBitmap(Properties.Resources.間距標籤_原圖, 250);
+
             // 添加「數量計算」面板
             try { ribbonPanel = application.CreateRibbonPanel(ribbonName, "數量計算"); }
             catch
