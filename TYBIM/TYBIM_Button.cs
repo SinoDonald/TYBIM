@@ -102,8 +102,8 @@ namespace TYBIM
             }
             PushButton spacingTagBtn = ribbonPanel.AddItem(new PushButtonData("SpacingTag", "間距標籤", addinAssmeblyPath, "TYBIM.Architecture.SpacingTag")) as PushButton;
             spacingTagBtn.LargeImage = convertFromBitmap(Properties.Resources.間距標籤);
-            spacingTagBtn.ToolTip = "【功能介紹】\n依選取建築元件的模型參考面建立連續尺寸，可設定量測方向、牆面基準與放置位置。";
-            spacingTagBtn.LongDescription = "【使用步驟】\n1. 開啟平面、結構平面或天花板平面視圖，點選「間距標籤」。\n2. 選擇尺寸類型、量測方向與放置方式，確認設定。\n3. 依提示選取元件或參考面；如選擇自訂方向或手動定位，依提示點選方向與位置。";
+            spacingTagBtn.ToolTip = "【功能介紹】\n依建築預設類別與自訂條件自動建立綠色間距尺寸，亦可手選模型參考面，不需載入標籤族。";
+            spacingTagBtn.LongDescription = "【使用步驟】\n1. 在專案中點選「間距標籤」，自動模式可選擇目標平面視圖。\n2. 選擇自動間距尺寸或手動連續尺寸。\n3. 自動間距尺寸：選擇平面視圖，勾選外牆配置或內牆配置，直接標註整張視圖；亦可框選範圍。每段尺寸預設獨立，可單獨刪除。\n4. 連續尺寸：設定方向與位置，再選取元件或手選參考面。";
             spacingTagBtn.ToolTipImage = convertFromBitmap(Properties.Resources.間距標籤_原圖, 250);
 
             // 添加「數量計算」面板

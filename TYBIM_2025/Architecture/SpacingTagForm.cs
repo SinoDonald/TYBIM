@@ -15,12 +15,14 @@ namespace TYBIM_2025.Architecture
         private readonly Forms.NumericUpDown offset = new Forms.NumericUpDown();
         private readonly Forms.CheckBox preselection = new Forms.CheckBox();
         private readonly Forms.CheckBox overall = new Forms.CheckBox();
+        private readonly Forms.CheckBox independent = new Forms.CheckBox();
         public int DirectionIndex { get { return direction.SelectedIndex; } }
         public int WallSideIndex { get { return wallSide.SelectedIndex; } }
         public bool ManualFaces { get { return mode.SelectedIndex == 1; } }
         public bool UsePreselection { get { return preselection.Checked; } }
         public bool OverallOnly { get { return overall.Checked; } }
-        public DimensionType SelectedType { get { return (DimensionType)dimensionType.SelectedItem; } }
+        public bool IndependentSegments { get { return independent.Checked; } }
+        public DimensionType SelectedType { get { return ((DimensionChoice)dimensionType.SelectedItem).Type; } }
         public int PlacementIndex { get { return placement.SelectedIndex; } }
         public double PaperOffsetMm { get { return (double)offset.Value; } }
 
@@ -48,7 +50,9 @@ namespace TYBIM_2025.Architecture
             AddChoice(layout, 2, "牆面基準", wallSide, new[] { "兩側／端面（含牆厚）", "內側面（依模型牆方向）", "外側面（依模型牆方向）" });
             dimensionType.DropDownStyle = Forms.ComboBoxStyle.DropDownList;
             dimensionType.DisplayMember = "Name";
-            foreach (DimensionType type in types) dimensionType.Items.Add(type);
+            dimensionType.Items.Add(new DimensionChoice { Name = "預設：TYBIM 綠色斜線（公分，2 mm 字高）" });
+            foreach (DimensionType type in types)
+                dimensionType.Items.Add(new DimensionChoice { Name = type.Name, Type = type });
             dimensionType.SelectedIndex = 0;
             dimensionType.Dock = Forms.DockStyle.Fill;
             layout.Controls.Add(new Forms.Label { Text = "尺寸類型", AutoSize = true, Anchor = Forms.AnchorStyles.Left }, 0, 3);
@@ -60,7 +64,13 @@ namespace TYBIM_2025.Architecture
             layout.Controls.Add(preselection, 1, 4);
             overall.Text = "僅建立最外兩點的總尺寸";
             overall.AutoSize = true;
-            layout.Controls.Add(overall, 1, 5);
+            var segmentOptions = new Forms.FlowLayoutPanel { Dock = Forms.DockStyle.Fill };
+            independent.Text = "每段獨立（可單獨刪除）";
+            independent.AutoSize = true;
+            independent.Checked = true;
+            segmentOptions.Controls.Add(independent);
+            segmentOptions.Controls.Add(overall);
+            layout.Controls.Add(segmentOptions, 1, 5);
             AddChoice(layout, 6, "尺寸線位置", placement,
                 new[] { "自動外側：上方", "自動外側：下方", "手動點選位置" });
             offset.Minimum = 1;
@@ -72,7 +82,8 @@ namespace TYBIM_2025.Architecture
             layout.Controls.Add(offset, 1, 7);
             var note = new Forms.Label
             {
-                Text = "選取同一組元件，依方向排序後建立連續尺寸。自動外側以所選元件包圍盒為界，偏移依視圖比例換算；斜向的左／右依指定起終點判定。\n\n" +
+                Text = "預設使用綠色斜線尺寸（公分，最多一位小數，2 mm 字高）；首次建立時加入專案，之後重用，可在類型性質微調或改選其他尺寸類型。\n" +
+                    "選取同一組元件，依方向排序後建立連續尺寸。自動外側以所選元件包圍盒為界，偏移依視圖比例換算；斜向的左／右依指定起終點判定。\n" +
                     "自動模式：直線基本牆、門窗、柱、家具及設備的平面外緣，以及原生矩形牆開口的兩側切口面；門窗外框不等於粗開口。\n" +
                     "內／外側依模型牆方向，並不代表房間內外。需要淨距、指定開口邊或設備定位時，請手選參考面。\n" +
                     "僅處理目前視圖的本機模型；曲面、連結模型及無有效平面參考的族群會略過。Esc 可取消。",
@@ -108,6 +119,12 @@ namespace TYBIM_2025.Architecture
                 placement.SelectedIndex = selected;
             };
             placement.SelectedIndexChanged += (sender, args) => offset.Enabled = PlacementIndex != 2;
+        }
+
+        private sealed class DimensionChoice
+        {
+            public string Name { get; set; }
+            public DimensionType Type { get; set; }
         }
 
         private static void AddChoice(Forms.TableLayoutPanel layout, int row, string label, Forms.ComboBox box, string[] choices)

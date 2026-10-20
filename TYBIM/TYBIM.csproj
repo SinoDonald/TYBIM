@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Architecture\SpacingTag.cs" />
+    <Compile Include="Architecture\ArchitecturalTagging.cs" />
     <Compile Include="Architecture\SpacingPlacement.cs" />
     <Compile Include="Architecture\SpacingTagForm.cs"><SubType>Form</SubType></Compile>
     <Compile Include="AutoBuild\CreateFloor.cs" />

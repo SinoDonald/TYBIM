@@ -7,6 +7,29 @@ namespace TYBIM_2025.Architecture
     /// <summary>Works in view-right/view-up coordinates, independent of view normal handedness.</summary>
     internal static class SpacingPlacement
     {
+        // Indices are reference indices, not segment indices. A covered interval splits a chain.
+        public static IList<Tuple<int, int>> UncoveredRuns(IList<bool> covered, bool independent)
+        {
+            var runs = new List<Tuple<int, int>>();
+            for (int i = 0; i < covered.Count; i++)
+            {
+                if (covered[i]) continue;
+                int first = i;
+                if (!independent)
+                    while (i + 1 < covered.Count && !covered[i + 1]) i++;
+                runs.Add(Tuple.Create(first, i + 1));
+            }
+            return runs;
+        }
+
+        public static bool ContainsAdjacentPair(IList<string> references, string first, string second)
+        {
+            for (int i = 1; i < references.Count; i++)
+                if ((references[i - 1] == first && references[i] == second) ||
+                    (references[i - 1] == second && references[i] == first)) return true;
+            return false;
+        }
+
         public static double OutsideCoordinate(IEnumerable<Point> corners, Vector direction,
             bool positiveSide, double paperOffsetMm, int viewScale)
         {
